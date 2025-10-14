@@ -1,5 +1,5 @@
-import type { HealthStatus } from './healthStatus';
+import type { HealthStatus } from "./healthStatus";
 
-export interface HealthService {
+export interface IHealthService {
   check(): Promise<HealthStatus>;
 }

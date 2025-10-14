@@ -6,14 +6,14 @@ import {
   controller,
   httpGet,
 } from "inversify-express-utils";
-import type { HealthService } from "../domain/healthService.interface";
+import type { IHealthService } from "../domain/healthService.interface";
 import { HEALTH_TYPES } from "../types";
 
 @controller("/health")
 export class HealthController extends BaseHttpController {
   constructor(
     @inject(HEALTH_TYPES.HealthService)
-    private readonly healthService: HealthService
+    private readonly healthService: IHealthService
   ) {
     super();
   }

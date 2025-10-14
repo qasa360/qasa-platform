@@ -1,4 +1,4 @@
-export interface Logger {
+export interface ILogger {
   debug(message: string, metadata?: Record<string, unknown>): void;
   info(message: string, metadata?: Record<string, unknown>): void;
   warn(message: string, metadata?: Record<string, unknown>): void;

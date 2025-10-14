@@ -1,22 +1,22 @@
-import { Logger } from './logger.interface';
+import type { ILogger } from "./logger.interface";
 
-type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogLevel = "debug" | "info" | "warn" | "error";
 
 const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 10,
   info: 20,
   warn: 30,
-  error: 40
+  error: 40,
 };
 
 const normalizeLevel = (level: string): LogLevel => {
-  if (['debug', 'info', 'warn', 'error'].includes(level)) {
+  if (["debug", "info", "warn", "error"].includes(level)) {
     return level as LogLevel;
   }
-  return 'info';
+  return "info";
 };
 
-export class ConsoleLogger implements Logger {
+export class ConsoleLogger implements ILogger {
   private readonly level: LogLevel;
 
   constructor(level: string) {
@@ -24,27 +24,33 @@ export class ConsoleLogger implements Logger {
   }
 
   public debug(message: string, metadata?: Record<string, unknown>): void {
-    this.log('debug', message, metadata);
+    this.log("debug", message, metadata);
   }
 
   public info(message: string, metadata?: Record<string, unknown>): void {
-    this.log('info', message, metadata);
+    this.log("info", message, metadata);
   }
 
   public warn(message: string, metadata?: Record<string, unknown>): void {
-    this.log('warn', message, metadata);
+    this.log("warn", message, metadata);
   }
 
   public error(message: string, metadata?: Record<string, unknown>): void {
-    this.log('error', message, metadata);
+    this.log("error", message, metadata);
   }
 
-  private log(level: LogLevel, message: string, metadata?: Record<string, unknown>): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    metadata?: Record<string, unknown>
+  ): void {
     if (LOG_LEVEL_PRIORITY[level] < LOG_LEVEL_PRIORITY[this.level]) {
       return;
     }
 
-    const payload = metadata ? `${message} | ${JSON.stringify(metadata)}` : message;
+    const payload = metadata
+      ? `${message} | ${JSON.stringify(metadata)}`
+      : message;
 
     // eslint-disable-next-line no-console
     console[level](payload);

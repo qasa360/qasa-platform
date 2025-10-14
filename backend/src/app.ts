@@ -9,9 +9,9 @@ import { notFoundHandler } from "./core/middlewares/notFoundHandler";
 import { createRequestLogger } from "./core/middlewares/requestLogger";
 import { appContainer } from "./dependencies/inversify.config";
 import { CORE_TYPES } from "./dependencies/types";
-import type { Logger } from "./core/logger/logger.interface";
+import type { ILogger } from "./core/logger/logger.interface";
 
-const logger = appContainer.get<Logger>(CORE_TYPES.Logger);
+const logger = appContainer.get<ILogger>(CORE_TYPES.Logger);
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {

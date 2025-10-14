@@ -1,17 +1,17 @@
-import type { RequestHandler } from 'express';
-import type { Logger } from '../logger/logger.interface';
+import type { RequestHandler } from "express";
+import type { ILogger } from "../logger/logger.interface";
 
 export const createRequestLogger =
-  (logger: Logger): RequestHandler =>
+  (logger: ILogger): RequestHandler =>
   (req, res, next) => {
     const start = Date.now();
-    res.on('finish', () => {
+    res.on("finish", () => {
       const duration = Date.now() - start;
-      logger.info('HTTP Request completed', {
+      logger.info("HTTP Request completed", {
         method: req.method,
         path: req.originalUrl,
         status: res.statusCode,
-        duration
+        duration,
       });
     });
     next();

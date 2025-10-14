@@ -1,5 +1,5 @@
 export type HealthStatus = {
-  status: 'ok';
+  status: "ok";
   timestamp: string;
   uptimeInSeconds: number;
 };
