@@ -1,6 +1,33 @@
+name: qasa-backend
 version: "3.8"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qasa-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-qasa_db}
+      POSTGRES_USER: ${POSTGRES_USER:-qasa_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qasa_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - qasa-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-qasa_user} -d ${POSTGRES_DB:-qasa_db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
   qasa-backend:
     build:
       context: .
@@ -21,8 +48,16 @@ services:
       - PORT=3000
       - LOG_LEVEL=debug
       - CORS_ALLOWED_ORIGINS=*
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-qasa_db}
+      - DATABASE_USER=${POSTGRES_USER:-qasa_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-qasa_password}
     env_file:
       - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - qasa-network
@@ -90,5 +125,7 @@ networks:
     driver: bridge
 
 volumes:
+  postgres_data:
+    driver: local
   node_modules:
     driver: local

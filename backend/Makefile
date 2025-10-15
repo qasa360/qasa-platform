@@ -11,13 +11,15 @@ help: ## Show this help message
 
 # Main command
 build-stack: ## Build and start the development stack
+	@echo "🧹 Cleaning up existing containers..."
+	@docker-compose down --remove-orphans 2>/dev/null || true
 	@echo "🚀 Building and starting QASA Backend..."
-	@docker-compose up --build qasa-backend
+	@docker-compose up --build
 
 # Essential commands
 up: ## Start the development environment
 	@echo "🚀 Starting QASA Backend..."
-	@docker-compose up qasa-backend
+	@docker-compose up
 
 down: ## Stop and remove all containers
 	@echo "🛑 Stopping all containers..."
