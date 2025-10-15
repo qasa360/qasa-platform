@@ -8,10 +8,12 @@ import { createErrorHandler } from "./core/middlewares/errorHandler";
 import { notFoundHandler } from "./core/middlewares/notFoundHandler";
 import { createRequestLogger } from "./core/middlewares/requestLogger";
 import { appContainer } from "./dependencies/inversify.config";
-import { CORE_TYPES } from "./dependencies/types";
-import type { ILogger } from "./core/logger/logger.interface";
+import { LIBS_TYPES } from "./dependencies/types";
+import type { ILogger } from "./lib/logger/logger.interface";
+import type { IMetrics } from "./lib/metrics/metrics.interface";
 
-const logger = appContainer.get<ILogger>(CORE_TYPES.Logger);
+const logger = appContainer.get<ILogger>(LIBS_TYPES.ILogger);
+const metrics = appContainer.get<IMetrics>(LIBS_TYPES.IMetrics);
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
@@ -45,7 +47,7 @@ server.setConfig((app) => {
 
 server.setErrorConfig((app) => {
   app.use(notFoundHandler);
-  app.use(createErrorHandler(logger));
+  app.use(createErrorHandler(logger, metrics));
 });
 
 export const app = server.build();

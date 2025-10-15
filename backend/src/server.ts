@@ -1,10 +1,10 @@
 import { appConfig } from "./config/appConfig";
-import type { ILogger } from "./core/logger/logger.interface";
+import type { ILogger } from "./lib/logger/logger.interface";
 import { appContainer } from "./dependencies/inversify.config";
-import { CORE_TYPES } from "./dependencies/types";
+import { LIBS_TYPES } from "./dependencies/types";
 import { app } from "./app";
 
-const logger = appContainer.get<ILogger>(CORE_TYPES.Logger);
+const logger = appContainer.get<ILogger>(LIBS_TYPES.ILogger);
 
 const { port, host } = appConfig.server;
 
