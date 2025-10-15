@@ -40,6 +40,10 @@ export const appConfig = {
       ),
     },
   },
+  statsd: {
+    host: process.env.STATSD_HOST ?? "localhost",
+    port: numberFromEnv(process.env.STATSD_PORT, 8125),
+  },
   database: {
     host: process.env.DATABASE_HOST ?? "localhost",
     port: numberFromEnv(process.env.DATABASE_PORT, 5432),
