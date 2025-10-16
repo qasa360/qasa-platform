@@ -11,4 +11,5 @@ export const LIBS_TYPES = {
 
 export const INFRASTRUCTURE_TYPES = {
   IPgClient: Symbol.for("IPgClient"),
+  IPrismaCustomClient: Symbol.for("IPrismaCustomClient"),
 } as const;

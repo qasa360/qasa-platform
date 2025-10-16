@@ -12,6 +12,8 @@ import { Logger } from "../lib/logger/logger";
 import type { ILogger } from "../lib/logger/logger.interface";
 import { RequestLogger } from "../lib/logger/requestLogger";
 import type { IRequestLogger } from "../lib/logger/requestLogger.interface";
+import { PrismaCustomClient } from "../infrastructure/prisma/PrismaCustomClient";
+import type { IPrismaCustomClient } from "../infrastructure/prisma/IPrismaCustomClient";
 import { CORE_TYPES, INFRASTRUCTURE_TYPES, LIBS_TYPES } from "./types";
 
 export const createContainer = (): Container => {
@@ -42,6 +44,12 @@ export const createContainer = (): Container => {
   container
     .bind<IPgClient>(INFRASTRUCTURE_TYPES.IPgClient)
     .to(PgClient)
+    .inSingletonScope();
+
+  // Infrastructure bindings (PrismaCustomClient)
+  container
+    .bind<IPrismaCustomClient>(INFRASTRUCTURE_TYPES.IPrismaCustomClient)
+    .to(PrismaCustomClient)
     .inSingletonScope();
 
   // Component modules

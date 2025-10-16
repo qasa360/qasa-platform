@@ -103,3 +103,4 @@ docs/build/
 # Docker
 .dockerignore
 Dockerfile.dev
+/src/generated/prisma

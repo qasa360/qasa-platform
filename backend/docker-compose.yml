@@ -6,7 +6,7 @@ services:
     image: postgres:16-alpine
     container_name: qasa-postgres
     ports:
-      - "5432:5432"
+      - "5430:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-qasa_db}
       POSTGRES_USER: ${POSTGRES_USER:-qasa_user}
@@ -49,7 +49,7 @@ services:
       - LOG_LEVEL=debug
       - CORS_ALLOWED_ORIGINS=*
       - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
+      - DATABASE_PORT=5430
       - DATABASE_NAME=${POSTGRES_DB:-qasa_db}
       - DATABASE_USER=${POSTGRES_USER:-qasa_user}
       - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-qasa_password}
