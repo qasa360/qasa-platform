@@ -1,0 +1,131 @@
+name: qasa-backend
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qasa-postgres
+    ports:
+      - "5430:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-qasa_db}
+      POSTGRES_USER: ${POSTGRES_USER:-qasa_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qasa_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - qasa-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-qasa_user} -d ${POSTGRES_DB:-qasa_db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  qasa-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: qasa-backend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      # Exclude node_modules to avoid conflicts
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - APP_ENV=development
+      - HOST=0.0.0.0
+      - PORT=3000
+      - LOG_LEVEL=debug
+      - CORS_ALLOWED_ORIGINS=*
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5430
+      - DATABASE_NAME=${POSTGRES_DB:-qasa_db}
+      - DATABASE_USER=${POSTGRES_USER:-qasa_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-qasa_password}
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - qasa-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/health",
+          "||",
+          "exit",
+          "1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Production service (optional, for testing production builds)
+  qasa-backend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: qasa-backend-prod
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - APP_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3000
+      - LOG_LEVEL=info
+      - CORS_ALLOWED_ORIGINS=*
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - qasa-network
+    profiles:
+      - production
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/health",
+          "||",
+          "exit",
+          "1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  qasa-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  node_modules:
+    driver: local
