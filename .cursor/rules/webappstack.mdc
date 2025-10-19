@@ -1,0 +1,302 @@
+---
+alwaysApply: true
+---
+
+## 0. Mobile First & Spanish
+The UI must be created mobile first, always.
+The UI must be in spanish for now.
+
+---
+## 1. Guiding Principles
+
+1. **One Source of Truth for UI:** Every visual element (button, card, input, modal) exists only once in the codebase.
+2. **Design Tokens First:** All colors, typography, spacing, and shadows are defined as tokens in Tailwind configuration or CSS variables.
+3. **Atomic Design:** Components follow a layered model — **Atoms → Molecules → Organisms → Templates → Pages**.
+4. **Composable, Not Inheritable:** Components should be built via composition and controlled variants, not deep inheritance or overrides.
+5. **Strong Typing:** All components use strict TypeScript props to ensure API clarity and eliminate ambiguity.
+6. **Themeable:** Support light/dark themes and future brand theming through CSS variables.
+7. **No Inline Styles or Repetition:** Tailwind utilities and class variants replace manual CSS.
+8. **Document Everything:** All components and tokens are documented via Storybook with live examples.
+
+---
+
+## 2. Tech Stack Summary
+
+| Layer                            | Tool / Library                     | Purpose                                              |
+| -------------------------------- | ---------------------------------- | ---------------------------------------------------- |
+| **Framework**                    | Next.js 15 (React 19)              | Server-side rendering, routing, performance          |
+| **Language**                     | TypeScript                         | Type safety and predictable APIs                     |
+| **Styling**                      | TailwindCSS + shadcn/ui + Radix UI | Unified design system and accessible base components |
+| **Design Tokens**                | Tailwind config + CSS variables    | Centralized color, spacing, and typography system    |
+| **Component System**             | Local `/src/components/ui` library | Core UI primitives (Button, Card, Dialog, etc.)      |
+| **Architecture Pattern**         | Atomic Design                      | Modular UI hierarchy and scalable composition        |
+| **State Management (local)**     | Zustand                            | Simple and predictable local store                   |
+| **Server State / Data Fetching** | React Query                        | Caching, async, and server synchronization           |
+| **Forms**                        | React Hook Form + Zod              | Declarative validation and controlled inputs         |
+| **Icons**                        | Lucide React                       | Consistent iconography across app                    |
+| **Animations**                   | Framer Motion                      | Smooth transitions and microinteractions             |
+| **Theme Handling**               | next-themes                        | Dark/light mode and dynamic themes                   |
+| **Testing**                      | Vitest + React Testing Library     | Unit + integration tests                             |
+| **Documentation**                | Storybook + MDX Docs               | Visual documentation of all components               |
+| **Deployment**                   | Vercel                             | Auto-deploys with CI/CD from GitHub                  |
+| **CI/CD**                        | GitHub Actions                     | Lint, test, build, and deploy pipelines              |
+
+---
+
+## 3. Project Structure
+
+```bash
+src/
+ ├── app/                     # Next.js App Router (layouts, pages)
+ │    ├── layout.tsx
+ │    ├── page.tsx
+ │    └── (routes)/           # Feature routes
+ ├── components/
+ │    ├── ui/                 # Atomic UI base (shadcn adapted)
+ │    ├── forms/              # Input, Checkbox, Select, etc.
+ │    ├── feedback/           # Toast, Spinner, EmptyState, etc.
+ │    ├── layout/             # Header, Sidebar, Footer, etc.
+ │    ├── audit/              # Domain-specific components
+ │    └── index.ts            # Barrel exports for all components
+ ├── hooks/                   # Custom React hooks
+ ├── lib/                     # Utilities, helpers, constants
+ ├── store/                   # Zustand stores
+ ├── styles/                  # Global styles and Tailwind config
+ │    ├── globals.css
+ │    └── tailwind.config.ts
+ ├── theme/                   # Color tokens and variants
+ ├── tests/                   # Vitest + RTL tests
+ └── stories/                 # Storybook stories (MDX)
+```
+
+---
+
+## 4. Atomic Design Implementation
+
+| Level         | Description                           | Example Components                 |
+| ------------- | ------------------------------------- | ---------------------------------- |
+| **Atoms**     | Smallest reusable building blocks     | Button, Input, Label, Icon         |
+| **Molecules** | Combinations of atoms                 | FormGroup, ModalHeader, CardHeader |
+| **Organisms** | Complex UI blocks                     | AuditQuestionForm, SidebarMenu     |
+| **Templates** | Page-level layouts                    | AuditPageLayout, DashboardLayout   |
+| **Pages**     | Routed components rendered by Next.js | `/audit/[id]/page.tsx`             |
+
+---
+
+## 5. Styling & Theming
+
+### 5.1 Tailwind Configuration
+
+* Centralize colors, fonts, spacing, border radius, and shadows.
+* Extend using **CSS variables** to enable runtime theme switching.
+
+### 5.2 Theme Handling
+
+* Use `next-themes` for dark/light switching.
+* All shadcn components automatically inherit CSS variables.
+
+### 5.3 Design Tokens Example
+
+```ts
+// tailwind.config.ts
+export const colors = {
+  primary: {
+    DEFAULT: 'hsl(var(--primary))',
+    foreground: 'hsl(var(--primary-foreground))',
+  },
+  secondary: {
+    DEFAULT: 'hsl(var(--secondary))',
+    foreground: 'hsl(var(--secondary-foreground))',
+  },
+};
+```
+
+---
+
+## 6. Component Design Guidelines
+
+### 6.1 Component Structure
+
+Each component should:
+
+* Live in `/src/components/<category>/<ComponentName>/index.tsx`
+* Include `index.tsx`, `types.ts`, `stories.mdx`, and `test.tsx`
+* Export from `src/components/index.ts`
+
+### 6.2 Example Component Skeleton
+
+```tsx
+import { cn } from '@/lib/utils';
+import { VariantProps, cva } from 'class-variance-authority';
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+      },
+      size: {
+        default: 'h-10 px-4 py-2',
+        sm: 'h-8 px-3',
+        lg: 'h-12 px-6',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+    },
+  }
+);
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof buttonVariants>;
+
+export const Button = ({ className, variant, size, ...props }: ButtonProps) => (
+  <button className={cn(buttonVariants({ variant, size, className }))} {...props} />
+);
+```
+
+### 6.3 Component Rules
+
+* ✅ **Accept `className`** for extension.
+* ✅ **Use variants** via `class-variance-authority`.
+* ✅ **Type props** with `VariantProps` and interfaces.
+* ✅ **Use Radix UI primitives** where accessibility matters (Dialog, Dropdown, etc.).
+* 🚫 No inline styles, `style={{}}`, or arbitrary Tailwind duplication.
+* 🚫 No direct DOM manipulation (use hooks and state).
+
+---
+
+## 7. Forms and Validation
+
+* Use **React Hook Form** with **Zod resolvers** for typed validation.
+* Every input component (Input, Checkbox, Select) integrates with RHF via `Controller`.
+
+Example:
+
+```tsx
+const schema = z.object({ email: z.string().email() });
+const { control, handleSubmit } = useForm({ resolver: zodResolver(schema) });
+
+<FormField control={control} name="email" render={({ field }) => (
+  <Input label="Email" {...field} />
+)} />
+```
+
+---
+
+## 8. State Management Strategy
+
+| Type               | Library       | Use Case                         |
+| ------------------ | ------------- | -------------------------------- |
+| **Local state**    | Zustand       | UI state, filters, toggles       |
+| **Server data**    | React Query   | Fetching, caching, and mutations |
+| **Global context** | React Context | Auth, theme, language            |
+
+Principle: keep business logic out of components — use stores and hooks for logic.
+
+---
+
+## 9. Testing Strategy
+
+| Type                  | Tool                  | Scope                  |
+| --------------------- | --------------------- | ---------------------- |
+| **Unit Tests**        | Vitest                | Components and hooks   |
+| **Integration Tests** | React Testing Library | User interaction flows |
+| **Visual Tests**      | Storybook + Chromatic | Detect UI regressions  |
+
+---
+
+## 10. Documentation (Storybook)
+
+Storybook is the **single source of truth** for the UI.
+
+* Each component includes a `.stories.mdx` file documenting:
+
+  * Props (auto-generated from TS)
+  * Variants (default, outline, ghost, etc.)
+  * Usage examples
+  * Interactive playground
+
+Run locally:
+
+```bash
+npm run storybook
+```
+
+Deploy automatically via GitHub Pages or Chromatic.
+
+---
+
+## 11. CI/CD & Quality Gates
+
+1. **Pre-commit hooks:** Lint + Type Check + Prettier (via Husky).
+2. **GitHub Actions:** Run build, test, Storybook preview.
+3. **Vercel Preview Deployments:** Every PR auto-deploys for review.
+4. **Chromatic visual review:** Optional approval before merging UI changes.
+
+---
+
+## 12. Folder Conventions Summary
+
+| Folder        | Description                     |
+| ------------- | ------------------------------- |
+| `app/`        | Next.js routes and layouts      |
+| `components/` | All UI and domain components    |
+| `hooks/`      | Custom reusable hooks           |
+| `lib/`        | Utilities and constants         |
+| `store/`      | Zustand stores for local state  |
+| `theme/`      | Design tokens and theming logic |
+| `tests/`      | Unit and integration tests      |
+| `stories/`    | Storybook documentation         |
+
+---
+
+## 13. Roadmap for Scalability
+
+| Phase             | Focus             | Deliverables                                           |
+| ----------------- | ----------------- | ------------------------------------------------------ |
+| **Phase 1 (MVP)** | Core UI setup     | Tailwind, shadcn, design tokens, Storybook             |
+| **Phase 2**       | Component library | 30+ reusable components documented                     |
+| **Phase 3**       | Domain modules    | Audit forms, incident modals, floor dashboards         |
+| **Phase 4**       | Advanced theming  | Multi-tenant theming via CSS variables                 |
+| **Phase 5**       | Automation        | Cursor rules integration, component generation scripts |
+
+---
+
+## 14. Cursor Integration Notes
+
+Cursor will use this document to enforce:
+
+* Component creation under correct folders.
+* Tailwind class patterns from shadcn.
+* Atomic hierarchy naming.
+* Zod + RHF for forms.
+* Strongly typed props and `class-variance-authority` variants.
+* No inline styles or custom CSS per component.
+
+Cursor prompt examples:
+
+```
+// Good prompt example for Cursor:
+"Create a new Molecule component <AuditItemCard> with shadcn styling, variants (default, critical),
+ typed props, and Storybook story following the rules in frontend-stack-refined.md"
+```
+
+---
+
+## ✅ Expected Outcomes
+
+* Consistent visual language across the entire app.
+* Rapid development of new pages using prebuilt building blocks.
+* Zero CSS duplication.
+* Design system ready for scaling to other QASA modules.
+* Fully automatable workflow via Cursor and CI.
+
+---
+
+**Author:** Esteban de la Peña
+**Version:** 1.0
+**Last Updated:** 2025-10-17
+
