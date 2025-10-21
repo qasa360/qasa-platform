@@ -49,7 +49,7 @@ services:
       - LOG_LEVEL=debug
       - CORS_ALLOWED_ORIGINS=*
       - DATABASE_HOST=postgres
-      - DATABASE_PORT=5430
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
       - DATABASE_NAME=${POSTGRES_DB:-qasa_db}
       - DATABASE_USER=${POSTGRES_USER:-qasa_user}
       - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-qasa_password}

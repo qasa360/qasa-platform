@@ -21,5 +21,5 @@ model Apartment {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@map("Apartment")
+  @@map("apartment")
 }

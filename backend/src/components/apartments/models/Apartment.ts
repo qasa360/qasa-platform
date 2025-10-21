@@ -1,69 +1,104 @@
 export class Apartment {
+  #id: number;
+  #name: string;
+  #address: string;
+  #city: string;
+  #country: string;
+  #postalCode: string;
+  #neighborhood: string;
+  #agent: string;
+  #createdAt: Date;
+  #updatedAt: Date;
+
   constructor(
-    private readonly _id: number,
-    private _name: string,
-    private _address: string,
-    private _city: string,
-    private _country: string,
-    private _postalCode: string,
-    private _neighborhood: string,
-    private _agent: string,
-    private _createdAt: Date,
-    private _updatedAt: Date
-  ) {}
+    id: number,
+    name: string,
+    address: string,
+    city: string,
+    country: string,
+    postalCode: string,
+    neighborhood: string,
+    agent: string,
+    createdAt: Date,
+    updatedAt: Date
+  ) {
+    this.#id = id;
+    this.#name = name;
+    this.#address = address;
+    this.#city = city;
+    this.#country = country;
+    this.#postalCode = postalCode;
+    this.#neighborhood = neighborhood;
+    this.#agent = agent;
+    this.#createdAt = createdAt;
+    this.#updatedAt = updatedAt;
+  }
+
+  /**
+   * Capitalizes the first letter of each word in a string
+   * @param text - The string to capitalize
+   * @returns The capitalized string
+   */
+  #capitalizeWords(text: string): string {
+    if (!text) return text;
+    return text
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
 
   get id(): number {
-    return this._id;
+    return this.#id;
   }
 
   get name(): string {
-    return this._name;
+    return this.#capitalizeWords(this.#name);
   }
 
   get address(): string {
-    return this._address;
+    return this.#capitalizeWords(this.#address);
   }
 
   get city(): string {
-    return this._city;
+    return this.#capitalizeWords(this.#city);
   }
 
   get country(): string {
-    return this._country;
+    return this.#capitalizeWords(this.#country);
   }
 
   get postalCode(): string {
-    return this._postalCode;
+    return this.#postalCode;
   }
 
   get neighborhood(): string {
-    return this._neighborhood;
+    return this.#capitalizeWords(this.#neighborhood);
   }
 
   get agent(): string {
-    return this._agent;
+    return this.#capitalizeWords(this.#agent);
   }
 
   get createdAt(): Date {
-    return this._createdAt;
+    return this.#createdAt;
   }
 
   get updatedAt(): Date {
-    return this._updatedAt;
+    return this.#updatedAt;
   }
 
-  toJson(): Record<string, unknown> {
+  toJSON(): Record<string, unknown> {
     return {
-      id: this._id,
-      name: this._name,
-      address: this._address,
-      city: this._city,
-      country: this._country,
-      postalCode: this._postalCode,
-      neighborhood: this._neighborhood,
-      agent: this._agent,
-      createdAt: this._createdAt,
-      updatedAt: this._updatedAt,
+      id: this.id,
+      name: this.name,
+      address: this.address,
+      city: this.city,
+      country: this.country,
+      postalCode: this.postalCode,
+      neighborhood: this.neighborhood,
+      agent: this.agent,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
   }
 }

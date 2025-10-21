@@ -21,7 +21,6 @@ export class ApartmentController extends BaseHttpController {
   async getApartmentsByAgent(req: Request, res: Response) {
     const agent = req.agent;
     const apartments = await this.apartmentService.getApartmentsByAgent(agent);
-    console.log("apartments", apartments);
-    return res.json(apartments);
+    return res.status(200).json(apartments);
   }
 }

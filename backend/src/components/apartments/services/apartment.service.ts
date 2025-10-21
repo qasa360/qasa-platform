@@ -12,6 +12,9 @@ export class ApartmentService implements IApartmentService {
   ) {}
 
   async getApartmentsByAgent(agent: string): Promise<Apartment[]> {
-    return this.apartmentRepository.getApartmentsByAgent(agent);
+    const apartments =
+      await this.apartmentRepository.getApartmentsByAgent(agent);
+    console.log("apartmentsasdfasdfasdfasdf", apartments);
+    return apartments;
   }
 }
