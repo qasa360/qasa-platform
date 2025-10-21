@@ -34,16 +34,23 @@ async function fetchApi<T>(
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    (headers as Headers).set('Authorization', `Bearer ${token}`);
   }
 
   const url = `${API_URL}${endpoint}`;
 
   try {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch(url, {
       ...fetchOptions,
       headers,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -63,6 +70,14 @@ async function fetchApi<T>(
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
+    }
+
+    // Handle timeout errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError(
+        'Request timeout - the server took too long to respond',
+        408
+      );
     }
 
     // Network or other errors
@@ -104,4 +119,3 @@ export const api = {
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     fetchApi<T>(endpoint, { ...options, method: 'DELETE' }),
 };
-

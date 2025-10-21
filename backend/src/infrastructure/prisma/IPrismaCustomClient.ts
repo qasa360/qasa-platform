@@ -1,4 +1,7 @@
+import type { PrismaClient } from "@prisma/client";
+
 export interface IPrismaCustomClient {
+  client: PrismaClient;
   executeInTransaction<T>({
     callback,
     requestId,

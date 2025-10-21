@@ -47,6 +47,9 @@ npm run migrate
 # Start development server with hot reload
 npm run start:dev
 
+# Start development server in debug mode (exposes debugger on port 9229)
+npm run start:debug
+
 # Build the project
 npm run build
 
@@ -56,6 +59,77 @@ npm start
 # Run linting
 npm run lint
 ```
+
+### Debug Mode
+
+**VS Code (Simplest Method)**
+
+1. Set breakpoints in your code
+2. Press **F5** (or open Debug panel and click "Docker: Debug Backend")
+3. VS Code automatically starts Docker in debug mode and attaches the debugger
+4. Trigger your endpoint and debug
+
+That's it. VS Code handles starting/stopping Docker containers automatically.
+
+**Manual Method (Other IDEs or CLI)**
+
+```bash
+# Start backend in debug mode
+make debug
+
+# Or with docker-compose
+docker-compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+
+# Or without Docker (local)
+npm run start:debug
+```
+
+Then attach your IDE debugger to `localhost:9229`.
+
+**For IntelliJ/WebStorm:**
+- Protocol: Inspector
+- Host: `localhost`
+- Port: `9229`
+- Remote root: `/app/src`
+- Local root: `./src`
+
+**Validation Example:**
+
+```typescript
+// Add a breakpoint in any controller
+// Example: src/components/health/infrastructure/health.service.ts
+@injectable()
+export class HealthService implements IHealthService {
+  public async getHealthStatus(): Promise<HealthStatus> {
+    // Set breakpoint here ←
+    const status: HealthStatus = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    };
+    return status;
+  }
+}
+```
+
+Trigger the endpoint:
+
+```bash
+curl http://localhost:3000/health
+```
+
+The debugger will pause at your breakpoint.
+
+**Trade-offs:**
+
+- **Simplicity vs Performance**: Debug mode adds ~10-20% overhead due to inspector protocol. Use only in development.
+- **Security**: Debug port (9229) is exposed on localhost. In production, NEVER expose this port externally (allows arbitrary code execution).
+
+**Troubleshooting:**
+
+- Port conflict: `nc -zv localhost 9229` to verify availability
+- Container issues: `docker-compose logs -f qasa-backend`
+- Clean restart: `docker-compose down && make debug`
 
 ### Environment Setup
 

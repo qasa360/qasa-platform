@@ -1,5 +1,4 @@
 name: qasa-backend
-version: "3.8"
 
 services:
   postgres:
@@ -31,28 +30,30 @@ services:
   qasa-backend:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: qasa-backend-dev
+      dockerfile: Dockerfile.dev
+    container_name: qasa-backend
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
+      - "${DEBUG_PORT:-9229}:9229" # Debug port
     volumes:
       # Mount source code for hot reload
       - ./src:/app/src
+      - ./prisma:/app/prisma
       # Exclude node_modules to avoid conflicts
       - /app/node_modules
     environment:
       - NODE_ENV=development
       - APP_ENV=development
       - HOST=0.0.0.0
-      - PORT=3000
+      - PORT=${PORT:-3000}
       - LOG_LEVEL=debug
       - CORS_ALLOWED_ORIGINS=*
       - DATABASE_HOST=postgres
-      - DATABASE_PORT=5430
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
       - DATABASE_NAME=${POSTGRES_DB:-qasa_db}
       - DATABASE_USER=${POSTGRES_USER:-qasa_user}
       - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-qasa_password}
+      - DEBUG_EXPOSE=${DEBUG_PORT:-9229}
     env_file:
       - .env
     depends_on:
@@ -69,7 +70,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:3000/health",
+          "http://localhost:${PORT:-3000}/health",
           "||",
           "exit",
           "1",
@@ -110,7 +111,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:3000/health",
+          "http://localhost:${PORT:-3000}/health",
           "||",
           "exit",
           "1",

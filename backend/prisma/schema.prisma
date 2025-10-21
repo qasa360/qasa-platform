@@ -1,8 +1,7 @@
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js" 
 }
 
 datasource db {
@@ -10,12 +9,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Flat {
-  id        Int      @id @default(autoincrement())
-  name      String
-  address   String
-  city      String
-  country   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Apartment {
+  id           Int      @id @default(autoincrement())
+  name         String
+  address      String
+  city         String
+  country      String
+  postal_code  String
+  neighborhood String
+  agent        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("apartment")
 }

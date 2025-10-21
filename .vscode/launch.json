@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Docker: Debug Backend",
+      "type": "node",
+      "request": "attach",
+      "port": "${env:DEBUG_PORT}",
+      "address": "localhost",
+      "localRoot": "${workspaceFolder}/backend",
+      "remoteRoot": "/app",
+      "protocol": "inspector",
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true
+    },
+    {
+      "name": "Debug Local Backend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/src/server.ts",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "NODE_ENV": "development",
+        "APP_ENV": "development",
+        "HOST": "0.0.0.0",
+        "PORT": "3000",
+        "LOG_LEVEL": "debug"
+      },
+      "console": "integratedTerminal",
+      "restart": true,
+      "protocol": "inspector",
+      "runtimeArgs": ["--inspect"]
+    }
+  ]
+}

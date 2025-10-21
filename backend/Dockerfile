@@ -23,8 +23,13 @@ FROM dependencies AS development
 # Copy source code
 COPY . .
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Expose port
 EXPOSE 3000
+# Expose debug port
+EXPOSE 9229
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
@@ -38,18 +43,25 @@ FROM dependencies AS build
 # Copy source code
 COPY . .
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Build the application
 RUN npm run build
 
 # Stage 5: Production
 FROM base AS production
 
+# Copy package files
+COPY package*.json ./
+
 # Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built application from build stage
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
