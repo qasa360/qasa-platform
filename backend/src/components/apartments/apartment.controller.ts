@@ -8,6 +8,7 @@ import {
 import { ensureAuthenticated } from "../../core/middlewares/ensureAuthenticated";
 import type { IApartmentService } from "./services/apartment.service.interface";
 import { APARTMENT_TYPES } from "./types";
+
 @controller("/apartments")
 export class ApartmentController extends BaseHttpController {
   constructor(
