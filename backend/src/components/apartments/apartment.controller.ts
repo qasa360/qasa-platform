@@ -24,4 +24,16 @@ export class ApartmentController extends BaseHttpController {
     const apartments = await this.apartmentService.getApartmentsByAgent(agent);
     return res.status(200).json(apartments);
   }
+
+  @httpGet("/:id", ensureAuthenticated)
+  async getApartmentById(req: Request, res: Response) {
+    const id = parseInt(req.params.id);
+    const agent = req.agent;
+    const apartment = await this.apartmentService.getApartmentByIdAndAgent(
+      id,
+      agent
+    );
+
+    return res.status(200).json(apartment);
+  }
 }

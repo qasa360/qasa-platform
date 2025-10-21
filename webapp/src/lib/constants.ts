@@ -3,10 +3,11 @@
  */
 
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'QASA Platform';
-export const APP_VERSION =
-  process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0';
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0';
+export const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8010';
 
 /**
  * Local storage keys
@@ -61,4 +62,3 @@ export const ANIMATION_DURATION = {
   NORMAL: 300,
   SLOW: 500,
 } as const;
-

@@ -16,6 +16,9 @@ export class ApartmentRepository implements IApartmentRepository {
       where: {
         agent,
       },
+      orderBy: {
+        name: "asc",
+      },
     });
 
     return result.map(
@@ -32,6 +35,35 @@ export class ApartmentRepository implements IApartmentRepository {
           apartment.createdAt,
           apartment.updatedAt
         )
+    );
+  }
+
+  async getApartmentByIdAndAgent(
+    id: number,
+    agent: string
+  ): Promise<Apartment | null> {
+    const result = await this.prisma.client.apartment.findUnique({
+      where: {
+        agent,
+        id,
+      },
+    });
+
+    if (!result) {
+      return null;
+    }
+
+    return new Apartment(
+      result.id,
+      result.name,
+      result.address,
+      result.city,
+      result.country,
+      result.postal_code,
+      result.neighborhood,
+      result.agent,
+      result.createdAt,
+      result.updatedAt
     );
   }
 }
