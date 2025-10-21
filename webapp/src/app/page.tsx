@@ -21,7 +21,7 @@ export default function HomePage() {
   const mockFloors = [
     { id: 1, name: 'Piso 1', building: 'Edificio A', status: 'activo' },
     { id: 2, name: 'Piso 2', building: 'Edificio A', status: 'activo' },
-    { id: 3, name: 'Piso 3', building: 'Edificio B', status: 'activo' },
+    { id: 3, name: 'Piso 333', building: 'Edificio B', status: 'activo' },
   ];
 
   const filteredFloors = mockFloors.filter((floor) =>
