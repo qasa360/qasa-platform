@@ -77,8 +77,8 @@ export class ApartmentRepository implements IApartmentRepository {
   ): Promise<Apartment | null> {
     const result = await this.prisma.client.apartment.findUnique({
       where: {
-        agent,
         id,
+        agent,
       },
       include: {
         spaces: true,
