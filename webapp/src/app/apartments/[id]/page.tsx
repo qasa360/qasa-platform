@@ -10,9 +10,16 @@ import {
   Home,
   Package,
   X,
+  Image,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useApartment } from '@/hooks/use-apartments';
 import { useInventoryBySpaceId } from '@/hooks/use-inventory';
 import { useSecondaryNav } from '@/hooks/use-secondary-nav';
@@ -21,7 +28,8 @@ import { ErrorState } from '@/components/feedback/error-state';
 import { InventoryList } from '@/components/inventory';
 import { ApartmentDetailNav } from '@/components/apartments/apartment-detail-nav';
 import { getSpaceTypeLabel, getSpaceTypeIcon } from '@/lib/utils/space-utils';
-import { SpaceType, Space } from '@/lib/types/apartment';
+import { Space } from '@/lib/types/apartment';
+import { Element } from '@/lib/types/inventory';
 
 /**
  * Apartment detail page - Shows individual apartment information
@@ -30,6 +38,11 @@ export default function ApartmentDetailPage() {
   const params = useParams();
   const apartmentId = parseInt(params.id as string);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [selectedImageSpace, setSelectedImageSpace] = useState<Space | null>(
+    null
+  );
+  const [selectedImageElement, setSelectedImageElement] =
+    useState<Element | null>(null);
   const { setSecondaryNav } = useSecondaryNav();
 
   // Set secondary navigation for this page
@@ -64,6 +77,27 @@ export default function ApartmentDetailPage() {
 
   const handleCloseInventory = () => {
     setSelectedSpace(null);
+  };
+
+  const handleThumbnailClick = (space: Space, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent space click
+    setSelectedImageSpace(space);
+  };
+
+  const handleCloseImageModal = () => {
+    setSelectedImageSpace(null);
+  };
+
+  const handleElementThumbnailClick = (
+    element: Element,
+    event: React.MouseEvent
+  ) => {
+    event.stopPropagation(); // Prevent any parent click
+    setSelectedImageElement(element);
+  };
+
+  const handleCloseElementImageModal = () => {
+    setSelectedImageElement(null);
   };
 
   if (isLoading) {
@@ -184,7 +218,7 @@ export default function ApartmentDetailPage() {
                     <div
                       key={space.id}
                       onClick={() => handleSpaceClick(space)}
-                      className="cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary/50 hover:bg-muted/50"
+                      className="relative cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary/50 hover:bg-muted/50"
                     >
                       <div className="mb-2 flex items-start justify-between">
                         <div className="flex items-center gap-2">
@@ -214,6 +248,16 @@ export default function ApartmentDetailPage() {
                       <div className="mt-2 flex items-center gap-1 text-xs text-primary">
                         <Package className="h-3 w-3" />
                         <span>Ver inventario</span>
+                      </div>
+
+                      {/* Thumbnail in bottom right */}
+                      <div
+                        className="absolute bottom-2 right-2 h-12 w-12 cursor-pointer overflow-hidden rounded-md border bg-muted transition-colors hover:bg-muted/80"
+                        onClick={(e) => handleThumbnailClick(space, e)}
+                      >
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Image className="h-6 w-6 text-muted-foreground" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -249,10 +293,73 @@ export default function ApartmentDetailPage() {
                 isError={isInventoryError}
                 error={inventoryError}
                 onRetry={refetchInventory}
+                onThumbnailClick={handleElementThumbnailClick}
               />
             </CardContent>
           </Card>
         )}
+
+        {/* Space Image Modal */}
+        <Dialog
+          open={!!selectedImageSpace}
+          onOpenChange={handleCloseImageModal}
+        >
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedImageSpace?.name} -{' '}
+                {selectedImageSpace?.spaceType
+                  ? getSpaceTypeLabel(selectedImageSpace.spaceType)
+                  : 'Ambiente'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4">
+              <div className="relative h-96 w-full max-w-2xl overflow-hidden rounded-lg border bg-muted">
+                <div className="flex h-full w-full items-center justify-center">
+                  <div className="text-center">
+                    <Image className="mx-auto h-16 w-16 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Imagen no disponible
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Haz clic para cargar una imagen
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Element Image Modal */}
+        <Dialog
+          open={!!selectedImageElement}
+          onOpenChange={handleCloseElementImageModal}
+        >
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedImageElement?.name} -{' '}
+                {selectedImageElement?.elementType.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-center p-4">
+              <div className="relative h-96 w-full max-w-2xl overflow-hidden rounded-lg border bg-muted">
+                <div className="flex h-full w-full items-center justify-center">
+                  <div className="text-center">
+                    <Image className="mx-auto h-16 w-16 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Imagen no disponible
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Haz clic para cargar una imagen
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

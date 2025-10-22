@@ -1,19 +1,24 @@
 'use client';
 
-import { Package, Tag, MapPin, Calendar } from 'lucide-react';
+import { Package, Tag, MapPin, Calendar, Image } from 'lucide-react';
 import { Element } from '@/lib/types/inventory';
 import { cn } from '@/lib/utils';
 
 interface ElementCardProps {
   element: Element;
   className?: string;
+  onThumbnailClick?: (element: Element, event: React.MouseEvent) => void;
 }
 
 /**
  * Card component to display a single inventory element
  * Shows element details including name, condition, category, and notes
  */
-export function ElementCard({ element, className }: ElementCardProps) {
+export function ElementCard({
+  element,
+  className,
+  onThumbnailClick,
+}: ElementCardProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -40,7 +45,7 @@ export function ElementCard({ element, className }: ElementCardProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50',
+        'relative rounded-lg border border-border bg-card p-4 transition-colors hover:bg-muted/50',
         className
       )}
     >
@@ -109,6 +114,18 @@ export function ElementCard({ element, className }: ElementCardProps) {
           <span>Agregado: {formatDate(element.createdAt)}</span>
         </div>
       </div>
+
+      {/* Thumbnail in bottom right */}
+      {onThumbnailClick && (
+        <div
+          className="absolute bottom-2 right-2 h-12 w-12 cursor-pointer overflow-hidden rounded-md border bg-muted transition-colors hover:bg-muted/80"
+          onClick={(e) => onThumbnailClick(element, e)}
+        >
+          <div className="flex h-full w-full items-center justify-center">
+            <Image className="h-6 w-6 text-muted-foreground" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

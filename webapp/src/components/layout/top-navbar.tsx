@@ -28,7 +28,7 @@ export function TopNavbar({ children, className }: TopNavbarProps) {
       <div
         className={cn(
           'flex h-14 items-center justify-between px-4 transition-all duration-300',
-          isCollapsed ? 'md:pl-18 pl-4' : 'pl-4 md:pl-72'
+          isCollapsed ? 'md:pl-20' : 'md:pl-72'
         )}
       >
         {/* Secondary Navigation Content */}

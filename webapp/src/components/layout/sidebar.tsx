@@ -35,23 +35,25 @@ export function Sidebar() {
 
   return (
     <aside
-      className={cn(
-        'hidden transition-all duration-300 md:fixed md:inset-y-0 md:z-50 md:flex md:flex-col',
-        isCollapsed ? 'md:w-14' : 'md:w-64'
-      )}
+      className="hidden transition-all duration-300 md:fixed md:inset-y-0 md:z-50 md:flex md:flex-col"
+      style={{
+        width: isCollapsed ? '64px' : '256px',
+      }}
     >
       <div
-        className={cn(
-          'flex flex-grow flex-col overflow-y-auto border-r bg-background pt-5',
-          isCollapsed ? 'px-0' : 'px-0'
-        )}
+        className="flex flex-grow flex-col overflow-y-auto border-r bg-background pt-5"
+        style={{
+          paddingLeft: isCollapsed ? '0px' : '16px',
+          paddingRight: isCollapsed ? '0px' : '16px',
+        }}
       >
         {/* Logo and Toggle */}
         <div
-          className={cn(
-            'flex flex-shrink-0 items-center justify-between',
-            isCollapsed ? 'px-2' : 'px-4'
-          )}
+          className="flex flex-shrink-0 items-center justify-between"
+          style={{
+            paddingLeft: isCollapsed ? '8px' : '16px',
+            paddingRight: isCollapsed ? '8px' : '16px',
+          }}
         >
           {!isCollapsed && (
             <Link href="/" className="flex items-center space-x-2">
@@ -77,7 +79,11 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav
-          className={cn('mt-5 flex-1 space-y-1', isCollapsed ? 'px-1' : 'px-2')}
+          className="mt-5 flex-1 space-y-1"
+          style={{
+            paddingLeft: isCollapsed ? '8px' : '8px',
+            paddingRight: isCollapsed ? '8px' : '8px',
+          }}
         >
           {navLinks.map((link) => {
             const Icon = link.icon;

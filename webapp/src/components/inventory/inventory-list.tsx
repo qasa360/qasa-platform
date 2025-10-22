@@ -13,6 +13,7 @@ interface InventoryListProps {
   isError?: boolean;
   error?: Error | null;
   onRetry?: () => void;
+  onThumbnailClick?: (element: Element, event: React.MouseEvent) => void;
   className?: string;
 }
 
@@ -26,6 +27,7 @@ export function InventoryList({
   isError,
   error,
   onRetry,
+  onThumbnailClick,
   className,
 }: InventoryListProps) {
   if (isLoading) {
@@ -74,7 +76,11 @@ export function InventoryList({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {elements.map((element) => (
-          <ElementCard key={element.id} element={element} />
+          <ElementCard
+            key={element.id}
+            element={element}
+            onThumbnailClick={onThumbnailClick}
+          />
         ))}
       </div>
     </div>
