@@ -1,7 +1,5 @@
-// prisma/schema.prisma
-
 generator client {
-  provider = "prisma-client-js" 
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,7 +8,7 @@ datasource db {
 }
 
 model Apartment {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   name         String
   address      String
   city         String
@@ -18,8 +16,36 @@ model Apartment {
   postal_code  String
   neighborhood String
   agent        String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  is_active    Boolean   @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+ 
+  spaces       Space[]
 
   @@map("apartment")
+}
+
+model Space {
+  id            Int        @id @default(autoincrement())
+  uuid          String     @unique @default(uuid())
+  apartment_id  Int
+  apartment     Apartment  @relation(fields: [apartment_id], references: [id])
+  name          String
+  space_type    SpaceType
+  m2            Float?
+  order         Int?
+  notes         String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@map("space")
+}
+
+enum SpaceType {
+  LIVING_ROOM
+  BEDROOM
+  KITCHEN
+  BATHROOM
+  BALCONY
+  OTHER
 }

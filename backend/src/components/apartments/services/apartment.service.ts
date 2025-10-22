@@ -21,10 +21,11 @@ export class ApartmentService implements IApartmentService {
     id: number,
     agent: string
   ): Promise<Apartment | null> {
-    const apartment = await this.apartmentRepository.getApartmentByIdAndAgent(
-      id,
-      agent
-    );
+    const apartment =
+      await this.apartmentRepository.getApartmentWithSpacesByIdAndAgent(
+        id,
+        agent
+      );
     return apartment;
   }
 }

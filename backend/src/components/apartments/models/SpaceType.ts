@@ -1,0 +1,8 @@
+export enum SpaceType {
+  LIVING_ROOM = "LIVING_ROOM",
+  BEDROOM = "BEDROOM",
+  KITCHEN = "KITCHEN",
+  BATHROOM = "BATHROOM",
+  BALCONY = "BALCONY",
+  OTHER = "OTHER",
+}
