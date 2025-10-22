@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -8,14 +9,18 @@ import {
   User,
   Calendar,
   Home,
+  Package,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApartment } from '@/hooks/use-apartments';
+import { useInventoryBySpaceId } from '@/hooks/use-inventory';
 import { LoadingSpinner } from '@/components/feedback/loading-spinner';
 import { ErrorState } from '@/components/feedback/error-state';
+import { InventoryList } from '@/components/inventory';
 import { getSpaceTypeLabel, getSpaceTypeIcon } from '@/lib/utils/space-utils';
-import { SpaceType } from '@/lib/types/apartment';
+import { SpaceType, Space } from '@/lib/types/apartment';
 
 /**
  * Apartment detail page - Shows individual apartment information
@@ -24,6 +29,7 @@ export default function ApartmentDetailPage() {
   const params = useParams();
   const router = useRouter();
   const apartmentId = parseInt(params.id as string);
+  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
 
   const {
     data: apartment,
@@ -33,8 +39,24 @@ export default function ApartmentDetailPage() {
     refetch,
   } = useApartment(apartmentId);
 
+  const {
+    data: inventory,
+    isLoading: isInventoryLoading,
+    isError: isInventoryError,
+    error: inventoryError,
+    refetch: refetchInventory,
+  } = useInventoryBySpaceId(selectedSpace?.id || 0);
+
   const handleBackClick = () => {
     router.back();
+  };
+
+  const handleSpaceClick = (space: Space) => {
+    setSelectedSpace(space);
+  };
+
+  const handleCloseInventory = () => {
+    setSelectedSpace(null);
   };
 
   if (isLoading) {
@@ -166,7 +188,8 @@ export default function ApartmentDetailPage() {
                   .map((space) => (
                     <div
                       key={space.id}
-                      className="rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                      onClick={() => handleSpaceClick(space)}
+                      className="cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary/50 hover:bg-muted/50"
                     >
                       <div className="mb-2 flex items-start justify-between">
                         <div className="flex items-center gap-2">
@@ -193,9 +216,45 @@ export default function ApartmentDetailPage() {
                           {space.notes}
                         </p>
                       )}
+                      <div className="mt-2 flex items-center gap-1 text-xs text-primary">
+                        <Package className="h-3 w-3" />
+                        <span>Ver inventario</span>
+                      </div>
                     </div>
                   ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Inventory Section */}
+        {selectedSpace && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Inventario - {selectedSpace.name}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCloseInventory}
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Cerrar
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InventoryList
+                elements={inventory || []}
+                isLoading={isInventoryLoading}
+                isError={isInventoryError}
+                error={inventoryError}
+                onRetry={refetchInventory}
+              />
             </CardContent>
           </Card>
         )}
