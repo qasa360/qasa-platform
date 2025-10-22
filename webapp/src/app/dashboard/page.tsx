@@ -1,10 +1,28 @@
+'use client';
+
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Construction } from 'lucide-react';
+import { DashboardNav } from '@/components/dashboard/dashboard-nav';
+import { useSecondaryNav } from '@/hooks/use-secondary-nav';
 
 /**
  * Dashboard page - Coming soon
+ * Demonstrates secondary navigation usage
  */
 export default function DashboardPage() {
+  const { setSecondaryNav } = useSecondaryNav();
+
+  useEffect(() => {
+    // Set secondary navigation for this page
+    setSecondaryNav(<DashboardNav />);
+
+    // Cleanup on unmount
+    return () => {
+      setSecondaryNav(null);
+    };
+  }, [setSecondaryNav]);
+
   return (
     <div className="container py-10">
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6">

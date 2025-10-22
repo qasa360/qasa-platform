@@ -16,6 +16,11 @@ export class ApartmentService {
    */
   static async getApartments(filters?: ApartmentFilters): Promise<Apartment[]> {
     try {
+      console.log(
+        '🏠 ApartmentService.getApartments called with filters:',
+        filters
+      );
+
       const queryParams = new URLSearchParams();
 
       if (filters?.search) {
@@ -35,10 +40,12 @@ export class ApartmentService {
         ? `${this.ENDPOINT}?${queryParams.toString()}`
         : this.ENDPOINT;
 
+      console.log('🌐 Making API call to endpoint:', endpoint);
       const response = await api.get<Apartment[]>(endpoint);
+      console.log('✅ API response received:', response?.length, 'apartments');
       return response;
     } catch (error) {
-      console.error('Error fetching apartments:', error);
+      console.error('❌ Error fetching apartments:', error);
       throw error;
     }
   }

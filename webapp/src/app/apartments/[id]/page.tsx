@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import {
-  ArrowLeft,
   Building,
   MapPin,
   User,
@@ -16,9 +15,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useApartment } from '@/hooks/use-apartments';
 import { useInventoryBySpaceId } from '@/hooks/use-inventory';
+import { useSecondaryNav } from '@/hooks/use-secondary-nav';
 import { LoadingSpinner } from '@/components/feedback/loading-spinner';
 import { ErrorState } from '@/components/feedback/error-state';
 import { InventoryList } from '@/components/inventory';
+import { ApartmentDetailNav } from '@/components/apartments/apartment-detail-nav';
 import { getSpaceTypeLabel, getSpaceTypeIcon } from '@/lib/utils/space-utils';
 import { SpaceType, Space } from '@/lib/types/apartment';
 
@@ -27,9 +28,19 @@ import { SpaceType, Space } from '@/lib/types/apartment';
  */
 export default function ApartmentDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const apartmentId = parseInt(params.id as string);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const { setSecondaryNav } = useSecondaryNav();
+
+  // Set secondary navigation for this page
+  useEffect(() => {
+    setSecondaryNav(<ApartmentDetailNav />);
+
+    // Cleanup on unmount
+    return () => {
+      setSecondaryNav(null);
+    };
+  }, [setSecondaryNav]);
 
   const {
     data: apartment,
@@ -46,10 +57,6 @@ export default function ApartmentDetailPage() {
     error: inventoryError,
     refetch: refetchInventory,
   } = useInventoryBySpaceId(selectedSpace?.id || 0);
-
-  const handleBackClick = () => {
-    router.back();
-  };
 
   const handleSpaceClick = (space: Space) => {
     setSelectedSpace(space);
@@ -90,7 +97,6 @@ export default function ApartmentDetailPage() {
         <ErrorState
           title="Apartamento no encontrado"
           description="El apartamento que buscas no existe o ha sido eliminado."
-          onRetry={handleBackClick}
         />
       </div>
     );
@@ -99,25 +105,14 @@ export default function ApartmentDetailPage() {
   return (
     <div className="container py-10">
       <div className="flex flex-col gap-6">
-        {/* Header with back button */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleBackClick}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {apartment.name}
-            </h1>
-            <p className="text-muted-foreground">
-              {apartment.address}, {apartment.neighborhood}, {apartment.city}
-            </p>
-          </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {apartment.name}
+          </h1>
+          <p className="text-muted-foreground">
+            {apartment.address}, {apartment.neighborhood}, {apartment.city}
+          </p>
         </div>
 
         {/* Apartment Details Card */}
