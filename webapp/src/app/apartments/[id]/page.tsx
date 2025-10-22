@@ -11,6 +11,9 @@ import {
   Package,
   X,
   Image,
+  Play,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,67 +142,63 @@ export default function ApartmentDetailPage() {
   return (
     <div className="container py-10">
       <div className="flex flex-col gap-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {apartment.name}
-          </h1>
-          <p className="text-muted-foreground">
-            {apartment.address}, {apartment.neighborhood}, {apartment.city}
-          </p>
+        {/* Apartment Info with Start Audit Button */}
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {apartment.name}
+            </h1>
+            <p className="text-muted-foreground">
+              {apartment.address}, {apartment.neighborhood}, {apartment.city}
+            </p>
+          </div>
+          <Button
+            disabled
+            className="bg-green-600 text-white hover:bg-green-700"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            INICIAR AUDITORÍA
+          </Button>
         </div>
-
-        {/* Apartment Details Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5 text-primary" />
-              Información del Apartamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Address Information */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <MapPin className="mt-1 h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm">{apartment.address}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {apartment.postalCode}
-                    </p>
-                  </div>
+      </div>
+      {/* Header with three blocks */}
+      <div className="space-y-6">
+        {/* Top row with three blocks */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Block 1: Status */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-green-100 p-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Estado
+                  </p>
+                  <p className="text-lg font-semibold">Activo</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Agent and Dates Information */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <User className="mt-1 h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm">{apartment.agent}</p>
-                  </div>
+          {/* Block 3: Last Audit */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-orange-100 p-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-600" />
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <Calendar className="mt-1 h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm">
-                      {new Date(apartment.createdAt).toLocaleDateString(
-                        'es-ES',
-                        {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        }
-                      )}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Última Auditoría
+                  </p>
+                  <p className="text-lg font-semibold">Nunca</p>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Spaces Section */}
         {apartment.spaces && apartment.spaces.length > 0 && (
