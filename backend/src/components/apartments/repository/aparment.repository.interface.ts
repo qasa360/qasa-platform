@@ -6,4 +6,8 @@ export interface IApartmentRepository {
     id: number,
     agent: string
   ): Promise<Apartment | null>;
+  getApartmentWithSpacesByIdAndAgent(
+    id: number,
+    agent: string
+  ): Promise<Apartment | null>;
 }

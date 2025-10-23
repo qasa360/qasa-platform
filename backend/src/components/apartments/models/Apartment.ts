@@ -1,3 +1,6 @@
+import { capitalizeWords } from "../../common/capitalizeWords";
+import type { Space } from "./Space";
+
 export class Apartment {
   #id: number;
   #name: string;
@@ -7,21 +10,39 @@ export class Apartment {
   #postalCode: string;
   #neighborhood: string;
   #agent: string;
+  #isActive: boolean;
   #createdAt: Date;
   #updatedAt: Date;
 
-  constructor(
-    id: number,
-    name: string,
-    address: string,
-    city: string,
-    country: string,
-    postalCode: string,
-    neighborhood: string,
-    agent: string,
-    createdAt: Date,
-    updatedAt: Date
-  ) {
+  #spaces?: Space[];
+
+  constructor({
+    id,
+    name,
+    address,
+    city,
+    country,
+    postalCode,
+    neighborhood,
+    agent,
+    isActive,
+    createdAt,
+    updatedAt,
+    spaces,
+  }: {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    country: string;
+    postalCode: string;
+    neighborhood: string;
+    agent: string;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    spaces?: Space[];
+  }) {
     this.#id = id;
     this.#name = name;
     this.#address = address;
@@ -30,21 +51,10 @@ export class Apartment {
     this.#postalCode = postalCode;
     this.#neighborhood = neighborhood;
     this.#agent = agent;
+    this.#isActive = isActive;
     this.#createdAt = createdAt;
     this.#updatedAt = updatedAt;
-  }
-
-  /**
-   * Capitalizes the first letter of each word in a string
-   * @param text - The string to capitalize
-   * @returns The capitalized string
-   */
-  #capitalizeWords(text: string): string {
-    if (!text) return text;
-    return text
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
+    this.#spaces = spaces;
   }
 
   get id(): number {
@@ -52,19 +62,19 @@ export class Apartment {
   }
 
   get name(): string {
-    return this.#capitalizeWords(this.#name);
+    return capitalizeWords(this.#name);
   }
 
   get address(): string {
-    return this.#capitalizeWords(this.#address);
+    return capitalizeWords(this.#address);
   }
 
   get city(): string {
-    return this.#capitalizeWords(this.#city);
+    return capitalizeWords(this.#city);
   }
 
   get country(): string {
-    return this.#capitalizeWords(this.#country);
+    return capitalizeWords(this.#country);
   }
 
   get postalCode(): string {
@@ -72,11 +82,15 @@ export class Apartment {
   }
 
   get neighborhood(): string {
-    return this.#capitalizeWords(this.#neighborhood);
+    return capitalizeWords(this.#neighborhood);
   }
 
   get agent(): string {
-    return this.#capitalizeWords(this.#agent);
+    return capitalizeWords(this.#agent);
+  }
+
+  get isActive(): boolean {
+    return this.#isActive;
   }
 
   get createdAt(): Date {
@@ -85,6 +99,10 @@ export class Apartment {
 
   get updatedAt(): Date {
     return this.#updatedAt;
+  }
+
+  get spaces(): Space[] | undefined {
+    return this.#spaces;
   }
 
   toJSON(): Record<string, unknown> {
@@ -97,8 +115,10 @@ export class Apartment {
       postalCode: this.postalCode,
       neighborhood: this.neighborhood,
       agent: this.agent,
+      isActive: this.isActive,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      spaces: this.spaces?.map((space) => space.toJSON()),
     };
   }
 }

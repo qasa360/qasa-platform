@@ -38,12 +38,18 @@ async function fetchApi<T>(
   }
 
   const url = `${API_URL}${endpoint}`;
+  console.log('🚀 fetchApi called:', {
+    url,
+    method: fetchOptions.method || 'GET',
+    headers,
+  });
 
   try {
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
+    console.log('⏳ Making fetch request to:', url);
     const response = await fetch(url, {
       ...fetchOptions,
       headers,
@@ -51,6 +57,10 @@ async function fetchApi<T>(
     });
 
     clearTimeout(timeoutId);
+    console.log('📡 Response received:', {
+      status: response.status,
+      ok: response.ok,
+    });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));

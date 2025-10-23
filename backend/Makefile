@@ -46,6 +46,16 @@ migrate: ## Run Prisma migrations inside the backend container
 	@docker compose exec qasa-backend npx prisma migrate dev --name "auto_migration"
 	@echo "✅ Migration completed successfully!"
 
+make seed: ## Run Prisma seed inside the backend container
+	@echo "📦 Checking if backend container is running..."
+	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
+		echo "⚠️  Backend container not running. Starting it first..."; \
+		docker compose up -d qasa-backend; \
+		sleep 5; \
+	fi
+	@echo "🏗️  Running Prisma seed..."
+	@docker compose exec qasa-backend npm run prisma:seed
+
 debug: ## Start backend in debug mode (port 9229 exposed for remote debugging)
 	@echo "🐛 Starting backend in debug mode..."
 	@docker-compose -f docker-compose.yml -f docker-compose.debug.yml up --build qasa-backend

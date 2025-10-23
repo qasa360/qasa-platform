@@ -1,7 +1,5 @@
-// prisma/schema.prisma
-
 generator client {
-  provider = "prisma-client-js" 
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -18,8 +16,87 @@ model Apartment {
   postal_code  String
   neighborhood String
   agent        String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now()) @updatedAt
+
+  spaces Space[]
 
   @@map("apartment")
+}
+
+model Space {
+  id           Int       @id @default(autoincrement())
+  uuid         String    @unique @default(uuid())
+  apartment_id Int
+  apartment    Apartment @relation(fields: [apartment_id], references: [id])
+  name         String
+  space_type   SpaceType
+  m2           Float?
+  order        Int?
+  notes        String?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @default(now()) @updatedAt
+
+  elements Element[]
+
+  @@map("space")
+}
+
+enum SpaceType {
+  LIVING_ROOM
+  BEDROOM
+  KITCHEN
+  BATHROOM
+  BALCONY
+  OTHER
+}
+
+model ElementCategory {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  icon        String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now()) @updatedAt
+
+  types ElementType[]
+}
+
+model ElementType {
+  id          Int             @id @default(autoincrement())
+  name        String
+  category_id Int
+  category    ElementCategory @relation(fields: [category_id], references: [id])
+  description String?
+  is_active   Boolean         @default(true)
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @default(now()) @updatedAt
+
+  elements Element[]
+
+  @@map("element_type")
+}
+
+model Element {
+  id              Int         @id @default(autoincrement())
+  uuid            String      @unique @default(uuid())
+  space_id        Int
+  space           Space       @relation(fields: [space_id], references: [id])
+  element_type_id Int
+  element_type    ElementType @relation(fields: [element_type_id], references: [id])
+
+  name       String
+  brand      String?
+  model      String?
+  material   String?
+  color      String?
+  condition  String?
+  notes      Json?
+  dimensions Json?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@map("element")
 }
