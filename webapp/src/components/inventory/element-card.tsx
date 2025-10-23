@@ -52,9 +52,14 @@ export function ElementCard({
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-medium text-foreground">
-            {element.name}
-          </h3>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">
+              {element.name}
+            </h3>
+            <p className="text-xs italic text-muted-foreground">
+              {element.elementType.name}
+            </p>
+          </div>
         </div>
         <span
           className={cn(
@@ -67,20 +72,22 @@ export function ElementCard({
       </div>
 
       <div className="space-y-2">
-        {/* Category and Type */}
+        {/* Category */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Tag className="h-3 w-3" />
           <span>{element.elementType.category.name}</span>
-          <span>•</span>
-          <span>{element.elementType.name}</span>
         </div>
-
         {/* Brand and Model */}
         {(element.brand || element.model) && (
           <div className="text-xs text-muted-foreground">
-            {element.brand && <span>Marca: {element.brand}</span>}
-            {element.brand && element.model && <span> • </span>}
-            {element.model && <span>Modelo: {element.model}</span>}
+            {[element.brand, element.model].filter(Boolean).join(' • ')}
+          </div>
+        )}
+
+        {/* Dimensions */}
+        {element.dimensions && Object.keys(element.dimensions).length > 0 && (
+          <div className="text-xs text-muted-foreground">
+            {Object.values(element.dimensions).join('x')}cm
           </div>
         )}
 
@@ -90,21 +97,6 @@ export function ElementCard({
             {element.material && <span>Material: {element.material}</span>}
             {element.material && element.color && <span> • </span>}
             {element.color && <span>Color: {element.color}</span>}
-          </div>
-        )}
-
-        {/* Notes */}
-        {element.notes && Object.keys(element.notes).length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            <span className="font-medium">Notas:</span>
-            <div className="mt-1 space-y-1">
-              {Object.entries(element.notes).map(([key, value]) => (
-                <div key={key} className="flex gap-1">
-                  <span className="capitalize">{key}:</span>
-                  <span>{String(value)}</span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 

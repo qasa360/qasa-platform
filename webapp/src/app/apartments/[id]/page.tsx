@@ -3,10 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Building,
-  MapPin,
-  User,
-  Calendar,
   Home,
   Package,
   X,
@@ -33,6 +29,7 @@ import { ApartmentDetailNav } from '@/components/apartments/apartment-detail-nav
 import { getSpaceTypeLabel, getSpaceTypeIcon } from '@/lib/utils/space-utils';
 import { Space } from '@/lib/types/apartment';
 import { Element } from '@/lib/types/inventory';
+import { cn } from '@/lib/utils';
 
 /**
  * Apartment detail page - Shows individual apartment information
@@ -217,7 +214,11 @@ export default function ApartmentDetailPage() {
                     <div
                       key={space.id}
                       onClick={() => handleSpaceClick(space)}
-                      className="relative cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary/50 hover:bg-muted/50"
+                      className={cn(
+                        'relative cursor-pointer rounded-lg border p-4 transition-colors hover:border-primary/50 hover:bg-muted/50',
+                        selectedSpace?.id === space.id &&
+                          'border-primary bg-primary/5'
+                      )}
                     >
                       <div className="mb-2 flex items-start justify-between">
                         <div className="flex items-center gap-2">
