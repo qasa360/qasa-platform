@@ -1,7 +1,9 @@
-// prisma/schema.prisma
+// =======================================================
+// QASA Auditing Platform - Prisma Schema (FASE 1 ISO-ready)
+// =======================================================
 
 generator client {
-  provider = "prisma-client-js" 
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -9,8 +11,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -------------------------------------------------------
+// ENUMS
+// -------------------------------------------------------
+
+enum QuestionTargetType {
+  APARTMENT
+  SPACE
+  ELEMENT
+}
+
+enum AnswerType {
+  BOOLEAN
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TEXT
+  NUMBER
+  PHOTO
+}
+
+enum QuestionCategory {
+  SAFETY
+  CLEANLINESS
+  MAINTENANCE
+  LEGAL
+  INVENTORY
+  CUSTOM
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ResponsibleType {
+  CLEANING
+  MAINTENANCE
+  MANAGEMENT
+  OWNER
+  OTHER
+}
+
+enum ImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NonConformityType {
+  OBSERVATION
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+// -------------------------------------------------------
+// CORE DOMAIN (Apartments, Spaces, Elements)
+// -------------------------------------------------------
+
 model Apartment {
-  id           Int      @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   name         String
   address      String
   city         String
@@ -18,8 +81,278 @@ model Apartment {
   postal_code  String
   neighborhood String
   agent        String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  is_active    Boolean @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  spaces Space[]
 
   @@map("apartment")
+}
+
+model SpaceType {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique // e.g. "Living"
+  code        String  @unique // e.g. "LIVING_ROOM"
+  description String?
+  icon        String?
+  is_active   Boolean @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  spaces    Space[]
+  templates QuestionTemplate[]
+
+  @@map("space_type")
+}
+
+model Space {
+  id            Int       @id @default(autoincrement())
+  uuid          String    @unique @default(uuid())
+  apartment_id  Int
+  apartment     Apartment @relation(fields: [apartment_id], references: [id])
+  name          String
+  space_type_id Int
+  space_type    SpaceType @relation(fields: [space_type_id], references: [id])
+  m2            Float?
+  order         Int?
+  notes         String?
+  is_active     Boolean   @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  elements Element[]
+
+  @@index([apartment_id], map: "idx_space_apartment")
+  @@index([space_type_id], map: "idx_space_spacetype")
+  @@map("space")
+}
+
+model ElementCategory {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique 
+  name        String  @unique
+  description String?
+  icon        String?
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  types ElementType[]
+
+  @@map("element_category")
+}
+
+model ElementType {
+  id          Int             @id @default(autoincrement())
+  name        String  @unique
+  code        String  @unique 
+  category_id Int
+  category    ElementCategory @relation(fields: [category_id], references: [id])
+  description String?
+  is_active   Boolean         @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  elements  Element[]
+  templates QuestionTemplate[]
+
+  @@unique([name, category_id], map: "uq_element_type_name_category")
+  @@index([category_id], map: "idx_elementtype_category")
+  @@map("element_type")
+}
+
+model Element {
+  id              Int         @id @default(autoincrement())
+  uuid            String      @unique @default(uuid())
+  space_id        Int
+  space           Space       @relation(fields: [space_id], references: [id])
+  element_type_id Int
+  element_type    ElementType @relation(fields: [element_type_id], references: [id])
+
+  name       String
+  brand      String?
+  model      String?
+  material   String?
+  color      String?
+  condition  String?
+  notes      Json?
+  dimensions Json?
+  is_active  Boolean @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([space_id], map: "idx_element_space")
+  @@index([element_type_id], map: "idx_element_elementtype")
+  @@map("element")
+}
+
+// -------------------------------------------------------
+// AUDIT TEMPLATE DOMAIN (FASE 1 ISO-ready)
+// -------------------------------------------------------
+
+model QuestionTemplateVersion {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique // e.g. "BASE_V1"
+  name        String
+  description String?
+  version     Int       @default(1)
+  valid_from  DateTime  @default(now())
+  valid_to    DateTime?
+
+  created_by  String?
+  approved_by String?
+  approved_at DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now()) @updatedAt
+
+  questions QuestionTemplate[]
+
+  @@map("question_template_version")
+}
+
+model QuestionTemplate {
+  id         Int                     @id @default(autoincrement())
+  version_id Int
+  version    QuestionTemplateVersion @relation(fields: [version_id], references: [id])
+
+  target_type     QuestionTargetType
+  space_type_id   Int?
+  element_type_id Int?
+  space_type      SpaceType?         @relation(fields: [space_type_id], references: [id])
+  element_type    ElementType?       @relation(fields: [element_type_id], references: [id])
+
+  question_text        String
+  answer_type          AnswerType
+  category             QuestionCategory
+  weight               Float?
+  impact               ImpactLevel      @default(MEDIUM)
+  sort_order           Int?
+  is_mandatory         Boolean          @default(false)
+  visibility_condition Json?
+  tags                 String?
+  reference            String?
+  notes                String?
+  is_active            Boolean          @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  options AnswerOption[]
+
+  followups_as_child AnswerOptionFollowup[] @relation("FollowupQuestions")
+
+  @@index([version_id], map: "idx_qt_version")
+  @@index([target_type, space_type_id], map: "idx_qt_target_space")
+  @@index([target_type, element_type_id], map: "idx_qt_target_element")
+  @@map("question_template")
+}
+
+model AnswerOption {
+  id          Int              @id @default(autoincrement())
+  question_id Int
+  question    QuestionTemplate @relation(fields: [question_id], references: [id])
+
+  code           String // semantic stable code: "YES","NO","NA","OK","FAIL"
+  label          String // UI label: "Sí", "No", "No aplica"
+  sort_order     Int?
+  penalty_weight Float?
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  followups      AnswerOptionFollowup[]
+  auto_incidence AutoIncidenceRule?
+
+  @@unique([question_id, code], map: "uq_answeroption_question_code")
+  @@index([question_id], map: "idx_answeroption_question")
+  @@map("answer_option")
+}
+
+model AnswerOptionFollowup {
+  id                Int     @id @default(autoincrement())
+  answer_option_id  Int
+  child_question_id Int
+  sort_order        Int?
+  required          Boolean @default(false)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  answer_option AnswerOption @relation(fields: [answer_option_id], references: [id])
+
+  child_question QuestionTemplate @relation("FollowupQuestions", fields: [child_question_id], references: [id])
+
+  @@index([answer_option_id], map: "idx_followup_answeroption")
+  @@index([child_question_id], map: "idx_followup_childquestion")
+  @@map("answer_option_followup")
+}
+
+model IncidenceTemplate {
+  id             Int                @id @default(autoincrement())
+  name           String
+  code           String  @unique   
+  category       QuestionCategory
+  severity       SeverityLevel
+  non_conformity NonConformityType?
+  responsible    ResponsibleType
+  description    String?
+  actions_json   Json? // suggested actions as JSON
+  is_active      Boolean            @default(true)
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  rules AutoIncidenceRule[]
+
+  @@map("incidence_template")
+}
+
+model AutoIncidenceRule {
+  id                    Int               @id @default(autoincrement())
+  answer_option_id      Int               @unique
+  incidence_template_id Int
+  answer_option         AnswerOption      @relation(fields: [answer_option_id], references: [id])
+  incidence_template    IncidenceTemplate @relation(fields: [incidence_template_id], references: [id])
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([incidence_template_id], map: "idx_rule_incidence_template")
+  @@map("auto_incidence_rule")
+}
+
+// -------------------------------------------------------
+// TEMPLATE CHANGE LOG (Audit Trail - ISO compliance)
+// -------------------------------------------------------
+
+model TemplateChangeLog {
+  id         Int      @id @default(autoincrement())
+  entity     String // "QuestionTemplate" | "AnswerOption" | "IncidenceTemplate" | etc.
+  entity_id  Int
+  field_name String
+  old_value  String?
+  new_value  String?
+  changed_by String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([entity, entity_id], map: "idx_tcl_entity_entityid")
+  @@map("template_change_log")
 }
