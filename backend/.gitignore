@@ -104,3 +104,6 @@ docs/build/
 .dockerignore
 Dockerfile.dev
 /src/generated/prisma
+
+# draft
+.draft/

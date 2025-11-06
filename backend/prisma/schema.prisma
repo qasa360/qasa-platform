@@ -89,6 +89,9 @@ model Apartment {
 
   spaces Space[]
 
+  @@index([city, is_active], map: "idx_apartment_city_active")
+  @@index([name], map: "idx_apartment_name")
+  @@index([is_active], map: "idx_apartment_active")
   @@map("apartment")
 }
 
@@ -105,7 +108,7 @@ model SpaceType {
   updated_at DateTime @default(now()) @updatedAt
 
   spaces    Space[]
-  templates QuestionTemplate[]
+  templates AuditQuestionTemplate[]
 
   @@map("space_type")
 }
@@ -114,10 +117,10 @@ model Space {
   id            Int       @id @default(autoincrement())
   uuid          String    @unique @default(uuid())
   apartment_id  Int
-  apartment     Apartment @relation(fields: [apartment_id], references: [id])
+  apartment     Apartment @relation(fields: [apartment_id], references: [id], onDelete: Cascade)
   name          String
   space_type_id Int
-  space_type    SpaceType @relation(fields: [space_type_id], references: [id])
+  space_type    SpaceType @relation(fields: [space_type_id], references: [id], onDelete: Restrict)
   m2            Float?
   order         Int?
   notes         String?
@@ -130,7 +133,9 @@ model Space {
   elements Element[]
 
   @@index([apartment_id], map: "idx_space_apartment")
+  @@index([apartment_id, is_active], map: "idx_space_apartment_active")
   @@index([space_type_id], map: "idx_space_spacetype")
+  @@unique([apartment_id, name], map: "uq_space_apartment_name")
   @@map("space")
 }
 
@@ -155,7 +160,7 @@ model ElementType {
   name        String  @unique
   code        String  @unique 
   category_id Int
-  category    ElementCategory @relation(fields: [category_id], references: [id])
+  category    ElementCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
   description String?
   is_active   Boolean         @default(true)
 
@@ -164,7 +169,7 @@ model ElementType {
   updated_at DateTime @default(now()) @updatedAt
 
   elements  Element[]
-  templates QuestionTemplate[]
+  templates AuditQuestionTemplate[]
 
   @@unique([name, category_id], map: "uq_element_type_name_category")
   @@index([category_id], map: "idx_elementtype_category")
@@ -175,9 +180,9 @@ model Element {
   id              Int         @id @default(autoincrement())
   uuid            String      @unique @default(uuid())
   space_id        Int
-  space           Space       @relation(fields: [space_id], references: [id])
+  space           Space       @relation(fields: [space_id], references: [id], onDelete: Cascade)
   element_type_id Int
-  element_type    ElementType @relation(fields: [element_type_id], references: [id])
+  element_type    ElementType @relation(fields: [element_type_id], references: [id], onDelete: Restrict)
 
   name       String
   brand      String?
@@ -194,7 +199,9 @@ model Element {
   updated_at DateTime @default(now()) @updatedAt
 
   @@index([space_id], map: "idx_element_space")
+  @@index([space_id, is_active], map: "idx_element_space_active")
   @@index([element_type_id], map: "idx_element_elementtype")
+  @@unique([space_id, name], map: "uq_element_space_name")
   @@map("element")
 }
 
@@ -202,7 +209,9 @@ model Element {
 // AUDIT TEMPLATE DOMAIN (FASE 1 ISO-ready)
 // -------------------------------------------------------
 
-model QuestionTemplateVersion {
+// AuditTemplateVersion: Complete version of the audit catalog
+// Groups questions, answer options, automatic rules and follow-ups
+model AuditTemplateVersion {
   id          Int       @id @default(autoincrement())
   code        String    @unique // e.g. "BASE_V1"
   name        String
@@ -210,6 +219,7 @@ model QuestionTemplateVersion {
   version     Int       @default(1)
   valid_from  DateTime  @default(now())
   valid_to    DateTime?
+  is_default  Boolean   @default(false) // Default version for new audits
 
   created_by  String?
   approved_by String?
@@ -217,21 +227,28 @@ model QuestionTemplateVersion {
   created_at  DateTime  @default(now())
   updated_at  DateTime  @default(now()) @updatedAt
 
-  questions QuestionTemplate[]
+  questions AuditQuestionTemplate[]
 
-  @@map("question_template_version")
+  @@index([valid_from, valid_to], map: "idx_atv_valid_period")
+  @@index([is_default], map: "idx_atv_is_default")
+  @@map("audit_template_version")
 }
 
-model QuestionTemplate {
+// AuditQuestionTemplate: Question within an audit template version
+model AuditQuestionTemplate {
   id         Int                     @id @default(autoincrement())
   version_id Int
-  version    QuestionTemplateVersion @relation(fields: [version_id], references: [id])
+  version    AuditTemplateVersion @relation(fields: [version_id], references: [id], onDelete: Restrict)
 
+  // INTEGRITY VALIDATION (must be enforced in application layer):
+  // - If target_type = SPACE → space_type_id MUST be NOT NULL
+  // - If target_type = ELEMENT → element_type_id MUST be NOT NULL
+  // - If target_type = APARTMENT → both space_type_id and element_type_id MUST be NULL
   target_type     QuestionTargetType
   space_type_id   Int?
   element_type_id Int?
-  space_type      SpaceType?         @relation(fields: [space_type_id], references: [id])
-  element_type    ElementType?       @relation(fields: [element_type_id], references: [id])
+  space_type      SpaceType?         @relation(fields: [space_type_id], references: [id], onDelete: Restrict)
+  element_type    ElementType?       @relation(fields: [element_type_id], references: [id], onDelete: Restrict)
 
   question_text        String
   answer_type          AnswerType
@@ -250,20 +267,24 @@ model QuestionTemplate {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  options AnswerOption[]
+  options AnswerOptionTemplate[]
 
   followups_as_child AnswerOptionFollowup[] @relation("FollowupQuestions")
 
-  @@index([version_id], map: "idx_qt_version")
-  @@index([target_type, space_type_id], map: "idx_qt_target_space")
-  @@index([target_type, element_type_id], map: "idx_qt_target_element")
-  @@map("question_template")
+  @@index([version_id], map: "idx_aqt_version")
+  @@index([version_id, is_active], map: "idx_aqt_version_active")
+  @@index([target_type, space_type_id], map: "idx_aqt_target_space")
+  @@index([target_type, element_type_id], map: "idx_aqt_target_element")
+  @@index([target_type, is_active], map: "idx_aqt_target_active")
+  @@index([category, is_active], map: "idx_aqt_category_active")
+  @@map("audit_question_template")
 }
 
-model AnswerOption {
+// AnswerOptionTemplate: Answer option within a question template
+model AnswerOptionTemplate {
   id          Int              @id @default(autoincrement())
   question_id Int
-  question    QuestionTemplate @relation(fields: [question_id], references: [id])
+  question    AuditQuestionTemplate @relation(fields: [question_id], references: [id], onDelete: Cascade)
 
   code           String // semantic stable code: "YES","NO","NA","OK","FAIL"
   label          String // UI label: "Sí", "No", "No aplica"
@@ -277,9 +298,9 @@ model AnswerOption {
   followups      AnswerOptionFollowup[]
   auto_incidence AutoIncidenceRule?
 
-  @@unique([question_id, code], map: "uq_answeroption_question_code")
-  @@index([question_id], map: "idx_answeroption_question")
-  @@map("answer_option")
+  @@unique([question_id, code], map: "uq_answeroptiontemplate_question_code")
+  @@index([question_id], map: "idx_answeroptiontemplate_question")
+  @@map("answer_option_template")
 }
 
 model AnswerOptionFollowup {
@@ -293,9 +314,9 @@ model AnswerOptionFollowup {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  answer_option AnswerOption @relation(fields: [answer_option_id], references: [id])
+  answer_option AnswerOptionTemplate @relation(fields: [answer_option_id], references: [id], onDelete: Cascade)
 
-  child_question QuestionTemplate @relation("FollowupQuestions", fields: [child_question_id], references: [id])
+  child_question AuditQuestionTemplate @relation("FollowupQuestions", fields: [child_question_id], references: [id], onDelete: Cascade)
 
   @@index([answer_option_id], map: "idx_followup_answeroption")
   @@index([child_question_id], map: "idx_followup_childquestion")
@@ -327,8 +348,8 @@ model AutoIncidenceRule {
   id                    Int               @id @default(autoincrement())
   answer_option_id      Int               @unique
   incidence_template_id Int
-  answer_option         AnswerOption      @relation(fields: [answer_option_id], references: [id])
-  incidence_template    IncidenceTemplate @relation(fields: [incidence_template_id], references: [id])
+  answer_option         AnswerOptionTemplate @relation(fields: [answer_option_id], references: [id], onDelete: Cascade)
+  incidence_template    IncidenceTemplate @relation(fields: [incidence_template_id], references: [id], onDelete: Cascade)
 
   created_by String?
   created_at DateTime @default(now())
@@ -339,12 +360,12 @@ model AutoIncidenceRule {
 }
 
 // -------------------------------------------------------
-// TEMPLATE CHANGE LOG (Audit Trail - ISO compliance)
+// AUDIT TEMPLATE CHANGE LOG (Audit Trail - ISO compliance)
 // -------------------------------------------------------
 
-model TemplateChangeLog {
+model AuditTemplateChangeLog {
   id         Int      @id @default(autoincrement())
-  entity     String // "QuestionTemplate" | "AnswerOption" | "IncidenceTemplate" | etc.
+  entity     String // "AuditQuestionTemplate" | "AnswerOptionTemplate" | "IncidenceTemplate" | etc.
   entity_id  Int
   field_name String
   old_value  String?
@@ -353,6 +374,8 @@ model TemplateChangeLog {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  @@index([entity, entity_id], map: "idx_tcl_entity_entityid")
-  @@map("template_change_log")
+  @@index([entity, entity_id], map: "idx_atcl_entity_entityid")
+  @@index([created_at], map: "idx_atcl_created_at")
+  @@index([changed_by], map: "idx_atcl_changed_by")
+  @@map("audit_template_change_log")
 }
