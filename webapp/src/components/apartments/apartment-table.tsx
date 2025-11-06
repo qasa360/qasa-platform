@@ -19,7 +19,7 @@ export function ApartmentTable({ apartments, className }: ApartmentTableProps) {
   const router = useRouter();
 
   const handleApartmentClick = (apartmentId: number) => {
-    router.push(`/apartment/${apartmentId}`);
+    router.push(`/apartments/${apartmentId}`);
   };
 
   if (!apartments || apartments.length === 0) {

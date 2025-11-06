@@ -46,7 +46,7 @@ migrate: ## Run Prisma migrations inside the backend container
 	@docker compose exec qasa-backend npx prisma migrate dev --name "auto_migration"
 	@echo "✅ Migration completed successfully!"
 
-migrate-query-create: ## Run Prisma migrations inside the backend container
+make seed: ## Run Prisma seed inside the backend container
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
@@ -55,7 +55,11 @@ migrate-query-create: ## Run Prisma migrations inside the backend container
 	fi
 	@echo "🏗️  Running Prisma migrations..."
 	@docker compose exec qasa-backend npx prisma migrate dev --create-only 
+
+migrate-query-create: ## Run Prisma migrations inside the backend container
 	@echo "✅ Migration completed successfully!"
+	@echo "🏗️  Running Prisma seed..."
+	@docker compose exec qasa-backend npm run prisma:seed
 
 debug: ## Start backend in debug mode (port 9229 exposed for remote debugging)
 	@echo "🐛 Starting backend in debug mode..."

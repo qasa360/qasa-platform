@@ -13,7 +13,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
-    "types": ["reflect-metadata"]
+    "types": ["reflect-metadata", "node"]
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]
