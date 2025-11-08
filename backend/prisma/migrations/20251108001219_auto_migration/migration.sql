@@ -122,7 +122,7 @@ CREATE TABLE "element" (
 );
 
 -- CreateTable
-CREATE TABLE "question_template_version" (
+CREATE TABLE "audit_template_version" (
     "id" SERIAL NOT NULL,
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -130,17 +130,18 @@ CREATE TABLE "question_template_version" (
     "version" INTEGER NOT NULL DEFAULT 1,
     "valid_from" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "valid_to" TIMESTAMP(3),
+    "is_default" BOOLEAN NOT NULL DEFAULT false,
     "created_by" TEXT,
     "approved_by" TEXT,
     "approved_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "question_template_version_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "audit_template_version_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "question_template" (
+CREATE TABLE "audit_question_template" (
     "id" SERIAL NOT NULL,
     "version_id" INTEGER NOT NULL,
     "target_type" "QuestionTargetType" NOT NULL,
@@ -162,11 +163,11 @@ CREATE TABLE "question_template" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "question_template_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "audit_question_template_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "answer_option" (
+CREATE TABLE "answer_option_template" (
     "id" SERIAL NOT NULL,
     "question_id" INTEGER NOT NULL,
     "code" TEXT NOT NULL,
@@ -177,11 +178,11 @@ CREATE TABLE "answer_option" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "answer_option_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "answer_option_template_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "answer_option_followup" (
+CREATE TABLE "answer_option_template_followup" (
     "id" SERIAL NOT NULL,
     "answer_option_id" INTEGER NOT NULL,
     "child_question_id" INTEGER NOT NULL,
@@ -191,7 +192,7 @@ CREATE TABLE "answer_option_followup" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "answer_option_followup_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "answer_option_template_followup_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -214,7 +215,7 @@ CREATE TABLE "incidence_template" (
 );
 
 -- CreateTable
-CREATE TABLE "auto_incidence_rule" (
+CREATE TABLE "template_auto_incidence_rule" (
     "id" SERIAL NOT NULL,
     "answer_option_id" INTEGER NOT NULL,
     "incidence_template_id" INTEGER NOT NULL,
@@ -222,11 +223,11 @@ CREATE TABLE "auto_incidence_rule" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "auto_incidence_rule_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "template_auto_incidence_rule_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "template_change_log" (
+CREATE TABLE "audit_template_change_log" (
     "id" SERIAL NOT NULL,
     "entity" TEXT NOT NULL,
     "entity_id" INTEGER NOT NULL,
@@ -237,8 +238,17 @@ CREATE TABLE "template_change_log" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "template_change_log_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "audit_template_change_log_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE INDEX "idx_apartment_city_active" ON "apartment"("city", "is_active");
+
+-- CreateIndex
+CREATE INDEX "idx_apartment_name" ON "apartment"("name");
+
+-- CreateIndex
+CREATE INDEX "idx_apartment_active" ON "apartment"("is_active");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "space_type_name_key" ON "space_type"("name");
@@ -253,7 +263,13 @@ CREATE UNIQUE INDEX "space_uuid_key" ON "space"("uuid");
 CREATE INDEX "idx_space_apartment" ON "space"("apartment_id");
 
 -- CreateIndex
+CREATE INDEX "idx_space_apartment_active" ON "space"("apartment_id", "is_active");
+
+-- CreateIndex
 CREATE INDEX "idx_space_spacetype" ON "space"("space_type_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uq_space_apartment_name" ON "space"("apartment_id", "name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "element_category_code_key" ON "element_category"("code");
@@ -280,46 +296,73 @@ CREATE UNIQUE INDEX "element_uuid_key" ON "element"("uuid");
 CREATE INDEX "idx_element_space" ON "element"("space_id");
 
 -- CreateIndex
+CREATE INDEX "idx_element_space_active" ON "element"("space_id", "is_active");
+
+-- CreateIndex
 CREATE INDEX "idx_element_elementtype" ON "element"("element_type_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "question_template_version_code_key" ON "question_template_version"("code");
+CREATE UNIQUE INDEX "uq_element_space_name" ON "element"("space_id", "name");
 
 -- CreateIndex
-CREATE INDEX "idx_qt_version" ON "question_template"("version_id");
+CREATE UNIQUE INDEX "audit_template_version_code_key" ON "audit_template_version"("code");
 
 -- CreateIndex
-CREATE INDEX "idx_qt_target_space" ON "question_template"("target_type", "space_type_id");
+CREATE INDEX "idx_atv_valid_period" ON "audit_template_version"("valid_from", "valid_to");
 
 -- CreateIndex
-CREATE INDEX "idx_qt_target_element" ON "question_template"("target_type", "element_type_id");
+CREATE INDEX "idx_atv_is_default" ON "audit_template_version"("is_default");
 
 -- CreateIndex
-CREATE INDEX "idx_answeroption_question" ON "answer_option"("question_id");
+CREATE INDEX "idx_aqt_version" ON "audit_question_template"("version_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "uq_answeroption_question_code" ON "answer_option"("question_id", "code");
+CREATE INDEX "idx_aqt_version_active" ON "audit_question_template"("version_id", "is_active");
 
 -- CreateIndex
-CREATE INDEX "idx_followup_answeroption" ON "answer_option_followup"("answer_option_id");
+CREATE INDEX "idx_aqt_target_space" ON "audit_question_template"("target_type", "space_type_id");
 
 -- CreateIndex
-CREATE INDEX "idx_followup_childquestion" ON "answer_option_followup"("child_question_id");
+CREATE INDEX "idx_aqt_target_element" ON "audit_question_template"("target_type", "element_type_id");
+
+-- CreateIndex
+CREATE INDEX "idx_aqt_target_active" ON "audit_question_template"("target_type", "is_active");
+
+-- CreateIndex
+CREATE INDEX "idx_aqt_category_active" ON "audit_question_template"("category", "is_active");
+
+-- CreateIndex
+CREATE INDEX "idx_answeroptiontemplate_question" ON "answer_option_template"("question_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uq_answeroptiontemplate_question_code" ON "answer_option_template"("question_id", "code");
+
+-- CreateIndex
+CREATE INDEX "idx_template_followup_answeroption" ON "answer_option_template_followup"("answer_option_id");
+
+-- CreateIndex
+CREATE INDEX "idx_template_followup_childquestion" ON "answer_option_template_followup"("child_question_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "incidence_template_code_key" ON "incidence_template"("code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "auto_incidence_rule_answer_option_id_key" ON "auto_incidence_rule"("answer_option_id");
+CREATE UNIQUE INDEX "template_auto_incidence_rule_answer_option_id_key" ON "template_auto_incidence_rule"("answer_option_id");
 
 -- CreateIndex
-CREATE INDEX "idx_rule_incidence_template" ON "auto_incidence_rule"("incidence_template_id");
+CREATE INDEX "idx_template_rule_incidence_template" ON "template_auto_incidence_rule"("incidence_template_id");
 
 -- CreateIndex
-CREATE INDEX "idx_tcl_entity_entityid" ON "template_change_log"("entity", "entity_id");
+CREATE INDEX "idx_atcl_entity_entityid" ON "audit_template_change_log"("entity", "entity_id");
+
+-- CreateIndex
+CREATE INDEX "idx_atcl_created_at" ON "audit_template_change_log"("created_at");
+
+-- CreateIndex
+CREATE INDEX "idx_atcl_changed_by" ON "audit_template_change_log"("changed_by");
 
 -- AddForeignKey
-ALTER TABLE "space" ADD CONSTRAINT "space_apartment_id_fkey" FOREIGN KEY ("apartment_id") REFERENCES "apartment"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "space" ADD CONSTRAINT "space_apartment_id_fkey" FOREIGN KEY ("apartment_id") REFERENCES "apartment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "space" ADD CONSTRAINT "space_space_type_id_fkey" FOREIGN KEY ("space_type_id") REFERENCES "space_type"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -328,31 +371,31 @@ ALTER TABLE "space" ADD CONSTRAINT "space_space_type_id_fkey" FOREIGN KEY ("spac
 ALTER TABLE "element_type" ADD CONSTRAINT "element_type_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "element_category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "element" ADD CONSTRAINT "element_space_id_fkey" FOREIGN KEY ("space_id") REFERENCES "space"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "element" ADD CONSTRAINT "element_space_id_fkey" FOREIGN KEY ("space_id") REFERENCES "space"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "element" ADD CONSTRAINT "element_element_type_id_fkey" FOREIGN KEY ("element_type_id") REFERENCES "element_type"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "question_template" ADD CONSTRAINT "question_template_version_id_fkey" FOREIGN KEY ("version_id") REFERENCES "question_template_version"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "audit_question_template" ADD CONSTRAINT "audit_question_template_version_id_fkey" FOREIGN KEY ("version_id") REFERENCES "audit_template_version"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "question_template" ADD CONSTRAINT "question_template_space_type_id_fkey" FOREIGN KEY ("space_type_id") REFERENCES "space_type"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "audit_question_template" ADD CONSTRAINT "audit_question_template_space_type_id_fkey" FOREIGN KEY ("space_type_id") REFERENCES "space_type"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "question_template" ADD CONSTRAINT "question_template_element_type_id_fkey" FOREIGN KEY ("element_type_id") REFERENCES "element_type"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "audit_question_template" ADD CONSTRAINT "audit_question_template_element_type_id_fkey" FOREIGN KEY ("element_type_id") REFERENCES "element_type"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "answer_option" ADD CONSTRAINT "answer_option_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "question_template"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "answer_option_template" ADD CONSTRAINT "answer_option_template_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "audit_question_template"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "answer_option_followup" ADD CONSTRAINT "answer_option_followup_answer_option_id_fkey" FOREIGN KEY ("answer_option_id") REFERENCES "answer_option"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "answer_option_template_followup" ADD CONSTRAINT "answer_option_template_followup_answer_option_id_fkey" FOREIGN KEY ("answer_option_id") REFERENCES "answer_option_template"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "answer_option_followup" ADD CONSTRAINT "answer_option_followup_child_question_id_fkey" FOREIGN KEY ("child_question_id") REFERENCES "question_template"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "answer_option_template_followup" ADD CONSTRAINT "answer_option_template_followup_child_question_id_fkey" FOREIGN KEY ("child_question_id") REFERENCES "audit_question_template"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auto_incidence_rule" ADD CONSTRAINT "auto_incidence_rule_answer_option_id_fkey" FOREIGN KEY ("answer_option_id") REFERENCES "answer_option"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "template_auto_incidence_rule" ADD CONSTRAINT "template_auto_incidence_rule_answer_option_id_fkey" FOREIGN KEY ("answer_option_id") REFERENCES "answer_option_template"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auto_incidence_rule" ADD CONSTRAINT "auto_incidence_rule_incidence_template_id_fkey" FOREIGN KEY ("incidence_template_id") REFERENCES "incidence_template"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "template_auto_incidence_rule" ADD CONSTRAINT "template_auto_incidence_rule_incidence_template_id_fkey" FOREIGN KEY ("incidence_template_id") REFERENCES "incidence_template"("id") ON DELETE CASCADE ON UPDATE CASCADE;

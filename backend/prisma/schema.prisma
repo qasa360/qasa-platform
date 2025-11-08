@@ -269,7 +269,7 @@ model AuditQuestionTemplate {
 
   options AnswerOptionTemplate[]
 
-  followups_as_child AnswerOptionFollowup[] @relation("FollowupQuestions")
+  followups_as_child AnswerOptionTemplateFollowup[] @relation("FollowupQuestions")
 
   @@index([version_id], map: "idx_aqt_version")
   @@index([version_id, is_active], map: "idx_aqt_version_active")
@@ -295,15 +295,15 @@ model AnswerOptionTemplate {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  followups      AnswerOptionFollowup[]
-  auto_incidence AutoIncidenceRule?
+  followups      AnswerOptionTemplateFollowup[]
+  auto_incidence TemplateAutoIncidenceRule?
 
   @@unique([question_id, code], map: "uq_answeroptiontemplate_question_code")
   @@index([question_id], map: "idx_answeroptiontemplate_question")
   @@map("answer_option_template")
 }
 
-model AnswerOptionFollowup {
+model AnswerOptionTemplateFollowup {
   id                Int     @id @default(autoincrement())
   answer_option_id  Int
   child_question_id Int
@@ -318,9 +318,9 @@ model AnswerOptionFollowup {
 
   child_question AuditQuestionTemplate @relation("FollowupQuestions", fields: [child_question_id], references: [id], onDelete: Cascade)
 
-  @@index([answer_option_id], map: "idx_followup_answeroption")
-  @@index([child_question_id], map: "idx_followup_childquestion")
-  @@map("answer_option_followup")
+  @@index([answer_option_id], map: "idx_template_followup_answeroption")
+  @@index([child_question_id], map: "idx_template_followup_childquestion")
+  @@map("answer_option_template_followup")
 }
 
 model IncidenceTemplate {
@@ -339,12 +339,12 @@ model IncidenceTemplate {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  rules AutoIncidenceRule[]
+  rules TemplateAutoIncidenceRule[]
 
   @@map("incidence_template")
 }
 
-model AutoIncidenceRule {
+model TemplateAutoIncidenceRule {
   id                    Int               @id @default(autoincrement())
   answer_option_id      Int               @unique
   incidence_template_id Int
@@ -355,8 +355,8 @@ model AutoIncidenceRule {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  @@index([incidence_template_id], map: "idx_rule_incidence_template")
-  @@map("auto_incidence_rule")
+  @@index([incidence_template_id], map: "idx_template_rule_incidence_template")
+  @@map("template_auto_incidence_rule")
 }
 
 // -------------------------------------------------------
@@ -365,7 +365,7 @@ model AutoIncidenceRule {
 
 model AuditTemplateChangeLog {
   id         Int      @id @default(autoincrement())
-  entity     String // "AuditQuestionTemplate" | "AnswerOptionTemplate" | "IncidenceTemplate" | etc.
+  entity     String // "AuditQuestionTemplate" | "AnswerOptionTemplate" | "AnswerOptionTemplateFollowup" | "IncidenceTemplate" | "TemplateAutoIncidenceRule" | etc.
   entity_id  Int
   field_name String
   old_value  String?
