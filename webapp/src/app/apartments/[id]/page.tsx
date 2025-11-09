@@ -10,6 +10,7 @@ import {
   Play,
   CheckCircle,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,9 @@ import {
 import { useApartment } from '@/hooks/use-apartments';
 import { useInventoryBySpaceId } from '@/hooks/use-inventory';
 import { useSecondaryNav } from '@/hooks/use-secondary-nav';
+import { useStartAudit, useActiveAudit } from '@/lib/hooks/audit';
+import { useRouter } from 'next/navigation';
+import { RotateCcw } from 'lucide-react';
 import { LoadingSpinner } from '@/components/feedback/loading-spinner';
 import { ErrorState } from '@/components/feedback/error-state';
 import { InventoryList } from '@/components/inventory';
@@ -44,6 +48,10 @@ export default function ApartmentDetailPage() {
   const [selectedImageElement, setSelectedImageElement] =
     useState<Element | null>(null);
   const { setSecondaryNav } = useSecondaryNav();
+  const router = useRouter();
+
+  // Get active audit for this apartment
+  const { data: activeAudit, isLoading: isLoadingActiveAudit } = useActiveAudit(apartmentId);
 
   // Set secondary navigation for this page
   useEffect(() => {
@@ -70,6 +78,8 @@ export default function ApartmentDetailPage() {
     error: inventoryError,
     refetch: refetchInventory,
   } = useInventoryBySpaceId(selectedSpace?.id || 0);
+
+  // Hook para iniciar auditoría
 
   const handleSpaceClick = (space: Space) => {
     setSelectedSpace(space);
@@ -149,13 +159,38 @@ export default function ApartmentDetailPage() {
               {apartment.address}, {apartment.neighborhood}, {apartment.city}
             </p>
           </div>
-          <Button
-            disabled
-            className="bg-green-600 text-white hover:bg-green-700"
-          >
-            <Play className="mr-2 h-4 w-4" />
-            INICIAR AUDITORÍA
-          </Button>
+          {isLoadingActiveAudit ? (
+            <Button disabled className="w-full sm:w-auto">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Cargando...
+            </Button>
+          ) : activeAudit ? (
+            <Button
+              onClick={() => router.push(`/audits/${activeAudit.id}`)}
+              className="w-full bg-blue-600 text-white hover:bg-blue-700 sm:w-auto"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              REANUDAR AUDITORÍA
+            </Button>
+          ) : (
+            <Button
+              onClick={() => startAuditMutation.mutate({ apartmentId })}
+              disabled={startAuditMutation.isPending}
+              className="w-full bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 sm:w-auto"
+            >
+              {startAuditMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Iniciando...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  INICIAR AUDITORÍA
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
       {/* Header with three blocks */}

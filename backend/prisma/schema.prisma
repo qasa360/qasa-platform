@@ -68,6 +68,29 @@ enum NonConformityType {
   CRITICAL
 }
 
+enum AuditStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum IncidenceStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum AuditPhotoContext {
+  AUDIT
+  SPACE
+  ELEMENT
+  QUESTION
+  RESPONSE
+  INCIDENCE
+}
+
 // -------------------------------------------------------
 // CORE DOMAIN (Apartments, Spaces, Elements)
 // -------------------------------------------------------
@@ -88,6 +111,7 @@ model Apartment {
   updated_at DateTime @default(now()) @updatedAt
 
   spaces Space[]
+  audits Audit[]
 
   @@index([city, is_active], map: "idx_apartment_city_active")
   @@index([name], map: "idx_apartment_name")
@@ -130,18 +154,21 @@ model Space {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  elements Element[]
+  elements         Element[]
+  audit_items      AuditItem[]
+  audit_incidences AuditIncidence[]
+  audit_photos     AuditPhoto[]
 
+  @@unique([apartment_id, name], map: "uq_space_apartment_name")
   @@index([apartment_id], map: "idx_space_apartment")
   @@index([apartment_id, is_active], map: "idx_space_apartment_active")
   @@index([space_type_id], map: "idx_space_spacetype")
-  @@unique([apartment_id, name], map: "uq_space_apartment_name")
   @@map("space")
 }
 
 model ElementCategory {
   id          Int     @id @default(autoincrement())
-  code        String  @unique 
+  code        String  @unique
   name        String  @unique
   description String?
   icon        String?
@@ -157,8 +184,8 @@ model ElementCategory {
 
 model ElementType {
   id          Int             @id @default(autoincrement())
-  name        String  @unique
-  code        String  @unique 
+  name        String          @unique
+  code        String          @unique
   category_id Int
   category    ElementCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
   description String?
@@ -198,10 +225,14 @@ model Element {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
+  audit_items      AuditItem[]
+  audit_incidences AuditIncidence[]
+  audit_photos     AuditPhoto[]
+
+  @@unique([space_id, name], map: "uq_element_space_name")
   @@index([space_id], map: "idx_element_space")
   @@index([space_id, is_active], map: "idx_element_space_active")
   @@index([element_type_id], map: "idx_element_elementtype")
-  @@unique([space_id, name], map: "uq_element_space_name")
   @@map("element")
 }
 
@@ -228,6 +259,7 @@ model AuditTemplateVersion {
   updated_at  DateTime  @default(now()) @updatedAt
 
   questions AuditQuestionTemplate[]
+  audits    Audit[]
 
   @@index([valid_from, valid_to], map: "idx_atv_valid_period")
   @@index([is_default], map: "idx_atv_is_default")
@@ -236,7 +268,7 @@ model AuditTemplateVersion {
 
 // AuditQuestionTemplate: Question within an audit template version
 model AuditQuestionTemplate {
-  id         Int                     @id @default(autoincrement())
+  id         Int                  @id @default(autoincrement())
   version_id Int
   version    AuditTemplateVersion @relation(fields: [version_id], references: [id], onDelete: Restrict)
 
@@ -267,9 +299,9 @@ model AuditQuestionTemplate {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  options AnswerOptionTemplate[]
-
+  options            AnswerOptionTemplate[]
   followups_as_child AnswerOptionTemplateFollowup[] @relation("FollowupQuestions")
+  audit_items        AuditItem[]
 
   @@index([version_id], map: "idx_aqt_version")
   @@index([version_id, is_active], map: "idx_aqt_version_active")
@@ -282,7 +314,7 @@ model AuditQuestionTemplate {
 
 // AnswerOptionTemplate: Answer option within a question template
 model AnswerOptionTemplate {
-  id          Int              @id @default(autoincrement())
+  id          Int                   @id @default(autoincrement())
   question_id Int
   question    AuditQuestionTemplate @relation(fields: [question_id], references: [id], onDelete: Cascade)
 
@@ -326,7 +358,7 @@ model AnswerOptionTemplateFollowup {
 model IncidenceTemplate {
   id             Int                @id @default(autoincrement())
   name           String
-  code           String  @unique   
+  code           String             @unique
   category       QuestionCategory
   severity       SeverityLevel
   non_conformity NonConformityType?
@@ -339,17 +371,18 @@ model IncidenceTemplate {
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
-  rules TemplateAutoIncidenceRule[]
+  rules            TemplateAutoIncidenceRule[]
+  audit_incidences AuditIncidence[]
 
   @@map("incidence_template")
 }
 
 model TemplateAutoIncidenceRule {
-  id                    Int               @id @default(autoincrement())
-  answer_option_id      Int               @unique
+  id                    Int                  @id @default(autoincrement())
+  answer_option_id      Int                  @unique
   incidence_template_id Int
   answer_option         AnswerOptionTemplate @relation(fields: [answer_option_id], references: [id], onDelete: Cascade)
-  incidence_template    IncidenceTemplate @relation(fields: [incidence_template_id], references: [id], onDelete: Cascade)
+  incidence_template    IncidenceTemplate    @relation(fields: [incidence_template_id], references: [id], onDelete: Cascade)
 
   created_by String?
   created_at DateTime @default(now())
@@ -378,4 +411,243 @@ model AuditTemplateChangeLog {
   @@index([created_at], map: "idx_atcl_created_at")
   @@index([changed_by], map: "idx_atcl_changed_by")
   @@map("audit_template_change_log")
+}
+
+// -------------------------------------------------------
+// AUDIT EXECUTION MODELS (FASE 2 - Execution Layer)
+// -------------------------------------------------------
+
+model Audit {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(uuid())
+
+  apartment_id Int
+  apartment    Apartment @relation(fields: [apartment_id], references: [id], onDelete: Restrict)
+
+  audit_template_version_id Int
+  template_version          AuditTemplateVersion @relation(fields: [audit_template_version_id], references: [id], onDelete: Restrict)
+
+  status          AuditStatus @default(DRAFT)
+  completion_rate Float       @default(0)
+
+  score            Float?
+  started_at       DateTime?
+  completed_at     DateTime?
+  cancelled_at     DateTime?
+  cancelled_reason String?
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  items      AuditItem[]
+  incidences AuditIncidence[]
+  photos     AuditPhoto[]
+  history    AuditStatusHistory[]
+
+  @@index([apartment_id], map: "idx_audit_apartment")
+  @@index([status], map: "idx_audit_status")
+  @@index([apartment_id, status], map: "idx_audit_apartment_status") // Optimize query for active audits per apartment
+  @@index([completion_rate], map: "idx_audit_completion_rate")
+  @@map("audit")
+}
+
+model AuditStatusHistory {
+  id          Int          @id @default(autoincrement())
+  audit_id    Int
+  audit       Audit        @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+  from_status AuditStatus?
+  to_status   AuditStatus
+  changed_by  String
+  changed_at  DateTime     @default(now())
+  reason      String?
+
+  @@index([audit_id], map: "idx_audit_status_history_audit")
+  @@map("audit_status_history")
+}
+
+model AuditItem {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(uuid())
+
+  audit_id Int
+  audit    Audit @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+
+  question_template_id Int
+  question_template    AuditQuestionTemplate @relation(fields: [question_template_id], references: [id], onDelete: Restrict)
+
+  target_type  QuestionTargetType
+  apartment_id Int?
+  space_id     Int?
+  element_id   Int?
+
+  space   Space?   @relation(fields: [space_id], references: [id], onDelete: Restrict)
+  element Element? @relation(fields: [element_id], references: [id], onDelete: Restrict)
+
+  question_text String
+  answer_type   AnswerType
+  category      QuestionCategory
+  weight        Float?
+  impact        ImpactLevel
+  is_mandatory  Boolean
+  sort_order    Int?
+
+  is_answered     Boolean @default(false)
+  is_visible      Boolean @default(true)
+  completion_rate Float   @default(0)
+
+  started_at   DateTime?
+  completed_at DateTime?
+
+  parent_audit_item_id Int?
+  parent_audit_item    AuditItem?  @relation("FollowupAuditItems", fields: [parent_audit_item_id], references: [id])
+  followups            AuditItem[] @relation("FollowupAuditItems")
+
+  answers    AuditResponse[]
+  options    AuditAnswerOption[]
+  photos     AuditPhoto[]
+  incidences AuditIncidence[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([audit_id], map: "idx_audit_item_audit")
+  @@index([space_id], map: "idx_audit_item_space")
+  @@index([element_id], map: "idx_audit_item_element")
+  @@map("audit_item")
+}
+
+model AuditAnswerOption {
+  id            Int       @id @default(autoincrement())
+  audit_item_id Int
+  audit_item    AuditItem @relation(fields: [audit_item_id], references: [id], onDelete: Cascade)
+
+  answer_option_template_id Int
+  code                      String
+  label                     String
+  sort_order                Int?
+  penalty_weight            Float?
+
+  created_at DateTime @default(now())
+
+  response_options AuditResponseOption[]
+
+  @@index([audit_item_id], map: "idx_audit_answer_option_item")
+  @@map("audit_answer_option")
+}
+
+model AuditResponse {
+  id            Int       @id @default(autoincrement())
+  audit_item_id Int
+  audit_item    AuditItem @relation(fields: [audit_item_id], references: [id], onDelete: Cascade)
+
+  boolean_value Boolean?
+  text_value    String?
+  number_value  Float?
+  notes         String?
+
+  selected_options AuditResponseOption[]
+  photos           AuditPhoto[]
+
+  started_at   DateTime? // auditor begins answering
+  completed_at DateTime? // auditor finalizes this answer
+
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([audit_item_id], map: "idx_audit_response_item")
+  @@map("audit_response")
+}
+
+model AuditResponseOption {
+  id                Int           @id @default(autoincrement())
+  audit_response_id Int
+  audit_response    AuditResponse @relation(fields: [audit_response_id], references: [id], onDelete: Cascade)
+
+  audit_answer_option_id Int
+  audit_answer_option    AuditAnswerOption @relation(fields: [audit_answer_option_id], references: [id], onDelete: Restrict)
+
+  @@index([audit_response_id], map: "idx_audit_response_option_response")
+  @@index([audit_answer_option_id], map: "idx_audit_response_option_answer_option")
+  @@map("audit_response_option")
+}
+
+model AuditIncidence {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique @default(uuid())
+
+  audit_id Int
+  audit    Audit @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+
+  audit_item_id Int?
+  audit_item    AuditItem? @relation(fields: [audit_item_id], references: [id], onDelete: Restrict)
+
+  incidence_template_id Int?
+  incidence_template    IncidenceTemplate? @relation(fields: [incidence_template_id], references: [id], onDelete: Restrict)
+
+  target_type  QuestionTargetType
+  apartment_id Int?
+  space_id     Int?
+  element_id   Int?
+
+  space   Space?   @relation(fields: [space_id], references: [id], onDelete: Restrict)
+  element Element? @relation(fields: [element_id], references: [id], onDelete: Restrict)
+
+  name           String
+  code           String?
+  category       QuestionCategory
+  severity       SeverityLevel
+  non_conformity NonConformityType?
+  responsible    ResponsibleType
+  description    String?
+  actions_json   Json?
+
+  status      IncidenceStatus @default(OPEN)
+  resolved_at DateTime?
+  closed_at   DateTime?
+  resolved_by String?
+  closed_by   String?
+
+  photos AuditPhoto[]
+  notes  String?
+
+  created_by String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@index([audit_id], map: "idx_audit_incidence_audit")
+  @@index([status], map: "idx_audit_incidence_status")
+  @@map("audit_incidence")
+}
+
+model AuditPhoto {
+  id       Int   @id @default(autoincrement())
+  audit_id Int
+  audit    Audit @relation(fields: [audit_id], references: [id], onDelete: Cascade)
+
+  context     AuditPhotoContext
+  url         String
+  description String?
+  metadata    Json?
+
+  space_id           Int?
+  element_id         Int?
+  audit_item_id      Int?
+  audit_response_id  Int?
+  audit_incidence_id Int?
+
+  space           Space?          @relation(fields: [space_id], references: [id], onDelete: Restrict)
+  element         Element?        @relation(fields: [element_id], references: [id], onDelete: Restrict)
+  audit_item      AuditItem?      @relation(fields: [audit_item_id], references: [id], onDelete: Restrict)
+  audit_response  AuditResponse?  @relation(fields: [audit_response_id], references: [id], onDelete: Restrict)
+  audit_incidence AuditIncidence? @relation(fields: [audit_incidence_id], references: [id], onDelete: Restrict)
+
+  created_by String?
+  created_at DateTime @default(now())
+
+  @@index([audit_id], map: "idx_audit_photo_audit")
+  @@index([context], map: "idx_audit_photo_context")
+  @@index([space_id], map: "idx_audit_photo_space")
+  @@index([element_id], map: "idx_audit_photo_element")
+  @@map("audit_photo")
 }

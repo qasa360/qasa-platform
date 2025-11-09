@@ -6,4 +6,15 @@ export interface IApartmentService {
     id: number,
     agent: string
   ): Promise<Apartment | null>;
+  getApartmentWithSpacesAndElements(apartmentId: number): Promise<{
+    id: number;
+    spaces: Array<{
+      id: number;
+      spaceTypeId: number;
+      elements: Array<{
+        id: number;
+        elementTypeId: number;
+      }>;
+    }>;
+  } | null>;
 }

@@ -14,6 +14,8 @@ import { RequestLogger } from "../lib/logger/requestLogger";
 import type { IRequestLogger } from "../lib/logger/requestLogger.interface";
 import { PrismaCustomClient } from "../infrastructure/prisma/PrismaCustomClient";
 import type { IPrismaCustomClient } from "../infrastructure/prisma/IPrismaCustomClient";
+import { CloudflareR2Client } from "../infrastructure/storage/CloudflareR2Client";
+import type { ICloudflareR2Client } from "../infrastructure/storage/ICloudflareR2Client";
 import { CORE_TYPES, INFRASTRUCTURE_TYPES, LIBS_TYPES } from "./types";
 
 export const createContainer = (): Container => {
@@ -50,6 +52,12 @@ export const createContainer = (): Container => {
   container
     .bind<IPrismaCustomClient>(INFRASTRUCTURE_TYPES.IPrismaCustomClient)
     .to(PrismaCustomClient)
+    .inSingletonScope();
+
+  // Infrastructure bindings (CloudflareR2Client)
+  container
+    .bind<ICloudflareR2Client>(INFRASTRUCTURE_TYPES.ICloudflareR2Client)
+    .to(CloudflareR2Client)
     .inSingletonScope();
 
   // Component modules

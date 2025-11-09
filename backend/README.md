@@ -87,6 +87,7 @@ npm run start:debug
 Then attach your IDE debugger to `localhost:9229`.
 
 **For IntelliJ/WebStorm:**
+
 - Protocol: Inspector
 - Host: `localhost`
 - Port: `9229`
@@ -103,7 +104,7 @@ export class HealthService implements IHealthService {
   public async getHealthStatus(): Promise<HealthStatus> {
     // Set breakpoint here ←
     const status: HealthStatus = {
-      status: 'healthy',
+      status: "healthy",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };
@@ -161,6 +162,7 @@ npx prisma migrate dev
 **Database Schema:**
 
 The current schema includes:
+
 - `Flat` model: Represents property listings with basic information (name, address, city, country)
 
 **Prisma Client Location:**
@@ -186,7 +188,7 @@ npx prisma generate
 **Validation Example:**
 
 ```typescript
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from "../generated/prisma";
 
 const prisma = new PrismaClient();
 
@@ -194,13 +196,13 @@ const prisma = new PrismaClient();
 async function testConnection() {
   try {
     await prisma.$connect();
-    console.log('Database connected successfully');
-    
+    console.log("Database connected successfully");
+
     // Simple query
     const flats = await prisma.flat.findMany();
     console.log(`Found ${flats.length} flats`);
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error("Database connection failed:", error);
   } finally {
     await prisma.$disconnect();
   }
@@ -221,6 +223,47 @@ async function testConnection() {
 - **Production**: Use `prisma migrate deploy` (non-interactive, fails on pending schema changes)
 - **Rollback**: Prisma doesn't support automatic rollback. Maintain manual rollback migrations or database snapshots
 - **Execution Window**: Simple migrations (add column, index) typically execute in <1s. Breaking changes require downtime or multi-phase deployment
+
+**Troubleshooting Migration Issues (Without Resetting Database):**
+
+If you encounter errors like "migration(s) are applied to the database but missing from the local migrations directory":
+
+**Option 1: Sync Missing Migrations (Recommended for Production)**
+
+```bash
+# 1. Check migration status
+make migrate-status
+
+# 2. If migrations are out of sync, create a sync migration
+make migrate-sync
+```
+
+**Option 2: Manual Sync (When Option 1 doesn't work)**
+
+```bash
+# 1. Check what's missing
+docker compose exec qasa-backend npx prisma migrate status
+
+# 2. See what differences exist between DB and schema
+docker compose exec qasa-backend npx prisma migrate diff \
+  --from-schema-datasource prisma/schema.prisma \
+  --to-schema-datamodel prisma/schema.prisma \
+  --script
+
+# 3. Remove problematic migration record from DB (if safe)
+docker compose exec postgres psql -U qasa -d qasa \
+  -c "DELETE FROM _prisma_migrations WHERE migration_name = 'MIGRATION_NAME';"
+
+# 4. Create new migration with missing changes
+docker compose exec qasa-backend npx prisma migrate dev --name sync_missing
+```
+
+**Important Notes:**
+
+- ⚠️ **Never reset the database in production** - Always sync migrations manually
+- ✅ **Always verify** what changes will be applied before syncing
+- ✅ **Backup first** in production before modifying migration records
+- ✅ **Test sync process** in staging environment first
 
 ## Example
 

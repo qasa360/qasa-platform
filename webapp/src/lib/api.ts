@@ -1,4 +1,4 @@
-import { API_URL } from './constants';
+import { API_URL, STORAGE_KEYS } from './constants';
 
 /**
  * Base API client configuration
@@ -20,6 +20,14 @@ interface RequestOptions extends RequestInit {
 }
 
 /**
+ * Obtener token de autenticación desde localStorage
+ */
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+}
+
+/**
  * Base fetch wrapper with error handling
  */
 async function fetchApi<T>(
@@ -28,13 +36,16 @@ async function fetchApi<T>(
 ): Promise<T> {
   const { token, ...fetchOptions } = options;
 
+  // Obtener token automáticamente si no se proporciona
+  const authToken = token || getAuthToken();
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...fetchOptions.headers,
   };
 
-  if (token) {
-    (headers as Headers).set('Authorization', `Bearer ${token}`);
+  if (authToken) {
+    (headers as Headers).set('Authorization', `Bearer ${authToken}`);
   }
 
   const url = `${API_URL}${endpoint}`;

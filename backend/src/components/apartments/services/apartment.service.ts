@@ -28,4 +28,20 @@ export class ApartmentService implements IApartmentService {
       );
     return apartment;
   }
+
+  async getApartmentWithSpacesAndElements(apartmentId: number): Promise<{
+    id: number;
+    spaces: Array<{
+      id: number;
+      spaceTypeId: number;
+      elements: Array<{
+        id: number;
+        elementTypeId: number;
+      }>;
+    }>;
+  } | null> {
+    return this.apartmentRepository.getApartmentWithSpacesAndElements(
+      apartmentId
+    );
+  }
 }
