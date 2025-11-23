@@ -7,4 +7,6 @@ export { AuditSpacesTable } from './AuditSpacesTable';
 export { SpaceCard } from './SpaceCard';
 export { GeneralQuestionsSection } from './GeneralQuestionsSection';
 export { AuditSkeleton } from './AuditSkeleton';
+export { QuestionCard } from './QuestionCard';
+export { QuestionForm } from './QuestionForm';
 

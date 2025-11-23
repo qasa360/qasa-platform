@@ -24,6 +24,19 @@ export class Audit {
   #incidences?: AuditIncidence[];
   #photos?: AuditPhoto[];
   #history?: AuditStatusHistory[];
+  #apartment?: {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    neighborhood?: string;
+    spaces?: Array<{
+      id: number;
+      name: string;
+      spaceTypeId: number;
+      order: number | null;
+    }>;
+  };
 
   constructor({
     id,
@@ -44,6 +57,7 @@ export class Audit {
     incidences,
     photos,
     history,
+    apartment,
   }: {
     id: number | null;
     uuid: string | null;
@@ -63,6 +77,19 @@ export class Audit {
     incidences?: AuditIncidence[];
     photos?: AuditPhoto[];
     history?: AuditStatusHistory[];
+    apartment?: {
+      id: number;
+      name: string;
+      address: string;
+      city: string;
+      neighborhood?: string;
+      spaces?: Array<{
+        id: number;
+        name: string;
+        spaceTypeId: number;
+        order: number | null;
+      }>;
+    };
   }) {
     this.#id = id;
     this.#uuid = uuid;
@@ -82,6 +109,7 @@ export class Audit {
     this.#incidences = incidences;
     this.#photos = photos;
     this.#history = history;
+    this.#apartment = apartment;
   }
 
   get id(): number | null {
@@ -156,6 +184,22 @@ export class Audit {
     return this.#history;
   }
 
+  get apartment(): {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    neighborhood?: string;
+    spaces?: Array<{
+      id: number;
+      name: string;
+      spaceTypeId: number;
+      order: number | null;
+    }>;
+  } | undefined {
+    return this.#apartment;
+  }
+
   canStart(): boolean {
     return this.#status === AuditStatus.DRAFT;
   }
@@ -187,6 +231,7 @@ export class Audit {
       createdBy: this.createdBy,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      apartment: this.#apartment,
       items: this.items?.map((item) => item.toJSON()),
       incidences: this.incidences?.map((incidence) => incidence.toJSON()),
       photos: this.photos?.map((photo) => photo.toJSON()),

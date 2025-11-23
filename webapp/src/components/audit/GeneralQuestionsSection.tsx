@@ -29,7 +29,7 @@ export function GeneralQuestionsSection({
   if (questions.length === 0) return null;
 
   return (
-    <Link href={`/audits/${auditId}/general`}>
+    <Link href={`/audits/${auditId}/general`} className="block">
       <Card
         className={cn(
           'mb-4 touch-manipulation transition-all active:scale-[0.98]',
@@ -54,7 +54,7 @@ export function GeneralQuestionsSection({
               {answered} de {questions.length} respondidas
             </span>
             <Badge
-              variant={isComplete ? 'success' : 'default'}
+              variant={isComplete ? 'success' : 'secondary'}
               className="text-xs"
             >
               {Math.round(completionRate)}%

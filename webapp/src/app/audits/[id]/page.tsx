@@ -2,16 +2,29 @@
 
 import { Suspense, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useAuditWithItems } from '@/lib/hooks/audit';
+import { useAuditWithItems, useCompleteAudit } from '@/lib/hooks/audit';
 import {
   calculateSpacesProgress,
   getGeneralQuestions,
+  areAllAuditQuestionsAnswered,
 } from '@/lib/utils/audit.utils';
 import { AuditHeader } from '@/components/audit/AuditHeader';
 import { AuditSpacesTable } from '@/components/audit/AuditSpacesTable';
 import { AuditSkeleton } from '@/components/audit/AuditSkeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 /**
  * Página principal de auditoría - Mobile First
@@ -23,39 +36,45 @@ export default function AuditPage() {
 
   // Hook con React Query - cache automático
   const { data, isLoading, error } = useAuditWithItems(auditId);
+  const completeAuditMutation = useCompleteAudit(auditId);
 
   // Cálculos memoizados (solo se recalculan si cambian los datos)
   const spacesProgress = useMemo(() => {
-    if (!data?.items) return [];
+    if (!data?.items || !data.audit.apartment?.spaces) return [];
 
-    // TODO: Obtener espacios del apartamento desde API
-    // Por ahora, extraer espacios únicos de los items
-    const spaceMap = new Map<
-      number,
-      { id: number; name: string; spaceTypeId: number; order: number | null }
-    >();
+    // Usar espacios reales del apartamento
+    const spaces = data.audit.apartment.spaces.map((space) => ({
+      id: space.id,
+      name: space.name,
+      spaceTypeId: space.spaceTypeId,
+      order: space.order,
+    }));
 
-    data.items.forEach((item) => {
-      if (item.spaceId && !spaceMap.has(item.spaceId)) {
-        // Necesitarías obtener el nombre del espacio desde el backend
-        // Por ahora usamos un placeholder
-        spaceMap.set(item.spaceId, {
-          id: item.spaceId,
-          name: `Espacio ${item.spaceId}`, // TODO: Obtener nombre real
-          spaceTypeId: 0, // TODO: Obtener desde backend
-          order: null, // TODO: Obtener desde backend
-        });
-      }
-    });
-
-    const spaces = Array.from(spaceMap.values());
     return calculateSpacesProgress(data.items, spaces);
-  }, [data?.items]);
+  }, [data?.items, data?.audit.apartment?.spaces]);
 
   const generalQuestions = useMemo(() => {
     if (!data?.items) return [];
     return getGeneralQuestions(data.items);
   }, [data?.items]);
+
+  // Verificar si todas las preguntas están completadas
+  const allQuestionsAnswered = useMemo(() => {
+    if (!data?.items) return false;
+    return areAllAuditQuestionsAnswered(data.items);
+  }, [data?.items]);
+
+  // Verificar si la auditoría puede ser finalizada
+  const canComplete = useMemo(() => {
+    return (
+      data?.audit.status === 'IN_PROGRESS' &&
+      allQuestionsAnswered &&
+      !completeAuditMutation.isPending
+    );
+  }, [data?.audit.status, allQuestionsAnswered, completeAuditMutation.isPending]);
+
+  // Verificar si la auditoría ya está completada
+  const isCompleted = data?.audit.status === 'COMPLETED';
 
   // Estados de carga y error
   if (isLoading) {
@@ -100,6 +119,18 @@ export default function AuditPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-6">
+      {/* Información del apartamento */}
+      {audit.apartment && (
+        <div className="mb-6 rounded-lg border bg-card p-4">
+          <h2 className="mb-1 text-lg font-semibold">{audit.apartment.name}</h2>
+          <p className="text-sm text-muted-foreground">
+            {audit.apartment.address}
+            {audit.apartment.neighborhood && `, ${audit.apartment.neighborhood}`}
+            {audit.apartment.city && `, ${audit.apartment.city}`}
+          </p>
+        </div>
+      )}
+
       {/* Header con tiempo y progreso */}
       <div className="mb-6">
         <Suspense fallback={<div>Cargando...</div>}>
@@ -115,6 +146,68 @@ export default function AuditPage() {
           generalQuestions={generalQuestions}
         />
       </Suspense>
+
+      {/* Botón de finalización */}
+      {isCompleted ? (
+        <div className="mt-6">
+          <Alert>
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertTitle>Auditoría completada</AlertTitle>
+            <AlertDescription>
+              Esta auditoría ha sido finalizada correctamente.
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : canComplete ? (
+        <div className="mt-6">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="lg"
+                className="w-full"
+                disabled={completeAuditMutation.isPending}
+              >
+                {completeAuditMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Finalizando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Finalizar auditoría
+                  </>
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Finalizar auditoría?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Una vez finalizada, no podrás modificar las respuestas. ¿Estás
+                  seguro de que deseas finalizar esta auditoría?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => completeAuditMutation.mutate()}
+                  disabled={completeAuditMutation.isPending}
+                >
+                  {completeAuditMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Finalizando...
+                    </>
+                  ) : (
+                    'Finalizar'
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      ) : null}
     </div>
   );
 }

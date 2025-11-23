@@ -14,7 +14,12 @@ import type {
  */
 export function calculateSpacesProgress(
   items: AuditItem[],
-  spaces: Array<{ id: number; name: string; spaceTypeId: number; order: number | null }>
+  spaces: Array<{
+    id: number;
+    name: string;
+    spaceTypeId: number;
+    order: number | null;
+  }>
 ): SpaceProgress[] {
   const spaceMap = new Map<number, SpaceProgress>();
 
@@ -33,9 +38,11 @@ export function calculateSpacesProgress(
   });
 
   // Contar preguntas por espacio
+  // Incluir tanto preguntas de tipo SPACE como preguntas de tipo ELEMENT
   items.forEach((item) => {
     if (item.spaceId && !item.parentAuditItemId) {
       // Solo contar preguntas principales (no follow-ups)
+      // Incluir preguntas de tipo SPACE y ELEMENT que pertenecen a este espacio
       const progress = spaceMap.get(item.spaceId);
       if (progress) {
         progress.totalQuestions++;
@@ -54,7 +61,9 @@ export function calculateSpacesProgress(
         : 0;
 
     // Verificar si tiene fotos requeridas
-    const spaceItems = items.filter((item) => item.spaceId === progress.spaceId);
+    const spaceItems = items.filter(
+      (item) => item.spaceId === progress.spaceId
+    );
     progress.hasRequiredPhotos = spaceItems.some(
       (item) => item.photos && item.photos.length > 0
     );
@@ -128,7 +137,7 @@ export function calculateElementsProgress(
 
   // Contar preguntas por elemento
   items.forEach((item) => {
-    if (item.elementId === spaceId && !item.parentAuditItemId) {
+    if (item.spaceId === spaceId && item.elementId && !item.parentAuditItemId) {
       const progress = elementMap.get(item.elementId);
       if (progress) {
         progress.totalQuestions++;
@@ -148,7 +157,9 @@ export function calculateElementsProgress(
         ? (progress.answeredQuestions / progress.totalQuestions) * 100
         : 0;
 
-    const elementItems = items.filter((item) => item.elementId === progress.elementId);
+    const elementItems = items.filter(
+      (item) => item.elementId === progress.elementId
+    );
     progress.hasRequiredPhotos = elementItems.some(
       (item) => item.photos && item.photos.length > 0
     );
@@ -221,3 +232,216 @@ export function formatElapsedTime(seconds: number): string {
     .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Encontrar el próximo espacio y elemento a auditar
+ * Retorna { spaceId, elementId } o null si no hay más elementos
+ */
+export function getNextSpaceAndElement(
+  items: AuditItem[],
+  spaces: Array<{
+    id: number;
+    name: string;
+    spaceTypeId: number;
+    order: number | null;
+  }>
+): { spaceId: number; elementId: number } | null {
+  // Ordenar espacios por order
+  const sortedSpaces = [...spaces].sort((a, b) => {
+    if (a.order !== null && b.order !== null) {
+      return a.order - b.order;
+    }
+    if (a.order !== null) return -1;
+    if (b.order !== null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Buscar el primer espacio con elementos sin auditar
+  for (const space of sortedSpaces) {
+    // Obtener todos los elementos únicos que tienen preguntas en este espacio
+    const elementIds = new Set<number>();
+    items.forEach((item) => {
+      if (
+        item.spaceId === space.id &&
+        item.elementId &&
+        !item.parentAuditItemId
+      ) {
+        elementIds.add(item.elementId);
+      }
+    });
+
+    // Buscar el primer elemento con preguntas sin responder
+    for (const elementId of elementIds) {
+      const elementQuestions = items.filter(
+        (item) =>
+          item.spaceId === space.id &&
+          item.elementId === elementId &&
+          !item.parentAuditItemId
+      );
+
+      // Si hay al menos una pregunta sin responder, este es el próximo elemento
+      const hasUnanswered = elementQuestions.some((q) => !q.isAnswered);
+      if (hasUnanswered) {
+        return { spaceId: space.id, elementId };
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Verificar si todas las preguntas de un elemento están completadas
+ * Incluye preguntas principales y sus follow-ups
+ */
+export function areAllElementQuestionsAnswered(
+  items: AuditItem[],
+  elementId: number
+): boolean {
+  // Obtener todas las preguntas principales del elemento
+  const mainQuestions = items.filter(
+    (item) => item.elementId === elementId && !item.parentAuditItemId
+  );
+
+  // Verificar que todas las preguntas principales estén respondidas
+  const allMainAnswered = mainQuestions.every((q) => q.isAnswered);
+  if (!allMainAnswered) {
+    return false;
+  }
+
+  // Verificar que todas las follow-ups de las preguntas principales también estén respondidas
+  for (const mainQuestion of mainQuestions) {
+    const followups = items.filter(
+      (item) => item.parentAuditItemId === mainQuestion.id
+    );
+    const allFollowupsAnswered = followups.every((f) => f.isAnswered);
+    if (!allFollowupsAnswered) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Verificar si todas las preguntas de la auditoría están completadas
+ * Incluye preguntas generales, de espacios y de elementos (con sus follow-ups)
+ */
+export function areAllAuditQuestionsAnswered(items: AuditItem[]): boolean {
+  if (items.length === 0) {
+    return false;
+  }
+
+  // Obtener todas las preguntas principales (no follow-ups)
+  const mainQuestions = items.filter((item) => !item.parentAuditItemId);
+
+  // Verificar que todas las preguntas principales estén respondidas
+  const allMainAnswered = mainQuestions.every((q) => q.isAnswered);
+  if (!allMainAnswered) {
+    return false;
+  }
+
+  // Verificar que todas las follow-ups también estén respondidas
+  for (const mainQuestion of mainQuestions) {
+    const followups = items.filter(
+      (item) => item.parentAuditItemId === mainQuestion.id
+    );
+    const allFollowupsAnswered = followups.every((f) => f.isAnswered);
+    if (!allFollowupsAnswered) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Encontrar el próximo elemento a auditar en el mismo espacio
+ * Retorna { spaceId, elementId } o null si no hay más elementos en el espacio
+ */
+export function getNextElementInSpace(
+  items: AuditItem[],
+  currentSpaceId: number,
+  currentElementId: number
+): { spaceId: number; elementId: number } | null {
+  // Obtener todos los elementos únicos del espacio actual que tienen preguntas
+  const currentSpaceElementIds = new Set<number>();
+  items.forEach((item) => {
+    if (
+      item.spaceId === currentSpaceId &&
+      item.elementId &&
+      !item.parentAuditItemId
+    ) {
+      currentSpaceElementIds.add(item.elementId);
+    }
+  });
+
+  // Convertir a array y ordenar (asumiendo que los IDs están en orden de creación/orden)
+  const sortedCurrentSpaceElements = Array.from(currentSpaceElementIds).sort(
+    (a, b) => a - b
+  );
+
+  // Buscar el índice del elemento actual
+  const currentIndex = sortedCurrentSpaceElements.indexOf(currentElementId);
+
+  // Buscar el próximo elemento en el mismo espacio (después del actual)
+  if (
+    currentIndex >= 0 &&
+    currentIndex < sortedCurrentSpaceElements.length - 1
+  ) {
+    for (let i = currentIndex + 1; i < sortedCurrentSpaceElements.length; i++) {
+      const elementId = sortedCurrentSpaceElements[i];
+      const elementQuestions = items.filter(
+        (item) =>
+          item.spaceId === currentSpaceId &&
+          item.elementId === elementId &&
+          !item.parentAuditItemId
+      );
+
+      // Si hay al menos una pregunta sin responder, este es el próximo elemento
+      const hasUnanswered = elementQuestions.some((q) => !q.isAnswered);
+      if (hasUnanswered) {
+        return { spaceId: currentSpaceId, elementId };
+      }
+    }
+  }
+
+  // No hay más elementos en el espacio actual
+  return null;
+}
+
+/**
+ * Encontrar el próximo espacio a auditar después del espacio actual
+ * Retorna el ID del próximo espacio o null si no hay más espacios
+ */
+export function getNextSpace(
+  spaces: Array<{
+    id: number;
+    name: string;
+    spaceTypeId: number;
+    order: number | null;
+  }>,
+  currentSpaceId: number
+): number | null {
+  // Ordenar espacios por order
+  const sortedSpaces = [...spaces].sort((a, b) => {
+    if (a.order !== null && b.order !== null) {
+      return a.order - b.order;
+    }
+    if (a.order !== null) return -1;
+    if (b.order !== null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Buscar el índice del espacio actual
+  const currentSpaceIndex = sortedSpaces.findIndex(
+    (s) => s.id === currentSpaceId
+  );
+
+  // Si hay un próximo espacio, retornarlo
+  if (currentSpaceIndex >= 0 && currentSpaceIndex < sortedSpaces.length - 1) {
+    return sortedSpaces[currentSpaceIndex + 1].id;
+  }
+
+  // No hay más espacios
+  return null;
+}

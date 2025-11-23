@@ -52,6 +52,7 @@ export default function ApartmentDetailPage() {
 
   // Get active audit for this apartment
   const { data: activeAudit, isLoading: isLoadingActiveAudit } = useActiveAudit(apartmentId);
+  const startAuditMutation = useStartAudit();
 
   // Set secondary navigation for this page
   useEffect(() => {

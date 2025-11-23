@@ -67,7 +67,11 @@ export class AuditController extends BaseHttpController {
   }
 
   @httpGet("/", ensureAuthenticated)
-  async getActiveAuditByApartment(req: Request, res: Response, next: NextFunction) {
+  async getActiveAuditByApartment(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
       const apartmentId = req.query.apartmentId;
 
@@ -96,7 +100,8 @@ export class AuditController extends BaseHttpController {
       }
 
       // Get active audit (IN_PROGRESS) for this apartment
-      const audit = await this.getAuditService.getActiveAuditByApartmentId(apartmentIdNum);
+      const audit =
+        await this.getAuditService.getActiveAuditByApartmentId(apartmentIdNum);
 
       if (!audit) {
         return res.status(200).json(null);

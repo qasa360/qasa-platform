@@ -48,6 +48,19 @@ export interface Audit {
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  apartment?: {
+    id: number;
+    name: string;
+    address: string;
+    city: string;
+    neighborhood?: string;
+    spaces?: Array<{
+      id: number;
+      name: string;
+      spaceTypeId: number;
+      order: number | null;
+    }>;
+  };
   items?: AuditItem[];
   incidences?: AuditIncidence[];
   photos?: AuditPhoto[];

@@ -29,6 +29,11 @@ import type { IAuditRepository } from "./audit.repository.interface";
 // Type definitions for Prisma query results
 type AuditWithRelations = Prisma.AuditGetPayload<{
   include: {
+    apartment: {
+      include: {
+        spaces: true;
+      };
+    };
     items: {
       include: {
         answers: {
@@ -132,6 +137,15 @@ export class AuditRepository implements IAuditRepository {
     const result = await this.prisma.client.audit.findUnique({
       where: { id },
       include: {
+        apartment: {
+          include: {
+            spaces: {
+              orderBy: {
+                order: "asc",
+              },
+            },
+          },
+        },
         items: {
           include: {
             answers: {
@@ -177,6 +191,15 @@ export class AuditRepository implements IAuditRepository {
     const result = await this.prisma.client.audit.findUnique({
       where: { uuid },
       include: {
+        apartment: {
+          include: {
+            spaces: {
+              orderBy: {
+                order: "asc",
+              },
+            },
+          },
+        },
         items: {
           include: {
             answers: {
@@ -551,6 +574,24 @@ export class AuditRepository implements IAuditRepository {
       createdBy: result.created_by ?? undefined,
       createdAt: result.created_at,
       updatedAt: result.updated_at,
+      apartment:
+        "apartment" in result && result.apartment
+          ? {
+              id: result.apartment.id,
+              name: result.apartment.name,
+              address: result.apartment.address,
+              city: result.apartment.city,
+              neighborhood: result.apartment.neighborhood ?? undefined,
+              spaces: result.apartment.spaces
+                ? result.apartment.spaces.map((space) => ({
+                    id: space.id,
+                    name: space.name,
+                    spaceTypeId: space.space_type_id,
+                    order: space.order,
+                  }))
+                : undefined,
+            }
+          : undefined,
       items:
         "items" in result && result.items
           ? result.items.map((item) => this.mapToAuditItem(item))
@@ -745,6 +786,15 @@ export class AuditRepository implements IAuditRepository {
         status: AuditStatus.IN_PROGRESS,
       },
       include: {
+        apartment: {
+          include: {
+            spaces: {
+              orderBy: {
+                order: "asc",
+              },
+            },
+          },
+        },
         items: {
           include: {
             answers: {

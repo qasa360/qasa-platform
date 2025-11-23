@@ -2,10 +2,8 @@ import { inject, injectable } from "inversify";
 import { INFRASTRUCTURE_TYPES } from "../../../dependencies/types";
 import { AppError } from "../../../core/errors/AppError";
 import { AUDIT_TYPES } from "../types";
-import { AuditStatus } from "../models/AuditStatus";
 import { AuditPhotoContext, AuditPhoto } from "../models/AuditPhoto";
 import { AuditResponse } from "../models/AuditResponse";
-import type { AuditItem } from "../models/AuditItem";
 import type { IAuditRepository } from "../repository/audit.repository.interface";
 import type { IPrismaCustomClient } from "../../../infrastructure/prisma/IPrismaCustomClient";
 import { Transactional } from "../../../infrastructure/prisma/TransactionalPrisma";
@@ -81,32 +79,66 @@ export class AnswerQuestionService implements IAnswerQuestionService {
       });
     }
 
-    if (item.isAnswered) {
-      throw new AppError({
-        origin: "AnswerQuestionService",
-        name: "AlreadyAnsweredError",
-        message: `Question ${data.auditItemId} has already been answered`,
-        httpCode: 400,
+    // Check if response already exists
+    const existingResponse =
+      item.answers && item.answers.length > 0 ? item.answers[0] : null;
+
+    let savedResponse: AuditResponse;
+
+    if (existingResponse) {
+      // Update existing response
+      const client = this.prismaCustomClient.client;
+
+      // Update the response
+      await client.auditResponse.update({
+        where: { id: existingResponse.id! },
+        data: {
+          boolean_value: data.booleanValue,
+          text_value: data.textValue,
+          number_value: data.numberValue,
+          notes: data.notes,
+          completed_at: new Date(),
+          updated_at: new Date(),
+        },
       });
+
+      // Delete existing response options
+      await client.auditResponseOption.deleteMany({
+        where: { audit_response_id: existingResponse.id! },
+      });
+
+      const updatedResponse = await this.auditRepository.getAuditResponseById(
+        existingResponse.id!
+      );
+
+      if (!updatedResponse) {
+        throw new AppError({
+          origin: "AnswerQuestionService",
+          name: "ResponseNotFoundError",
+          message: `Response with id ${existingResponse.id} not found after update`,
+          httpCode: 404,
+        });
+      }
+
+      savedResponse = updatedResponse;
+    } else {
+      // Create new response entity
+      const response = new AuditResponse({
+        id: null,
+        auditItemId: data.auditItemId,
+        booleanValue: data.booleanValue,
+        textValue: data.textValue,
+        numberValue: data.numberValue,
+        notes: data.notes,
+        startedAt: item.startedAt ?? new Date(),
+        completedAt: new Date(),
+        createdAt: null,
+        updatedAt: null,
+      });
+
+      // Save new response
+      savedResponse = await this.auditRepository.saveAuditResponse(response);
     }
-
-    // Create response entity
-    const response = new AuditResponse({
-      id: null,
-      auditItemId: data.auditItemId,
-      booleanValue: data.booleanValue,
-      textValue: data.textValue,
-      numberValue: data.numberValue,
-      notes: data.notes,
-      startedAt: item.startedAt ?? new Date(),
-      completedAt: new Date(),
-      createdAt: null,
-      updatedAt: null,
-    });
-
-    // Save response
-    const savedResponse =
-      await this.auditRepository.saveAuditResponse(response);
 
     // Create response options if provided
     if (data.selectedOptionIds && data.selectedOptionIds.length > 0) {
@@ -141,6 +173,14 @@ export class AnswerQuestionService implements IAnswerQuestionService {
 
     // Upload photos if provided
     if (data.photos && data.photos.length > 0) {
+      // If updating, delete old photos first (optional - you might want to keep them)
+      if (existingResponse) {
+        const client = this.prismaCustomClient.client;
+        await client.auditPhoto.deleteMany({
+          where: { audit_response_id: savedResponse.id! },
+        });
+      }
+
       const photoEntities = data.photos.map(
         (photo) =>
           new AuditPhoto({
@@ -182,7 +222,7 @@ export class AnswerQuestionService implements IAnswerQuestionService {
       throw new AppError({
         origin: "AnswerQuestionService",
         name: "ResponseNotFoundError",
-        message: `Response with id ${response.id} not found`,
+        message: `Response with id ${savedResponse.id} not found`,
         httpCode: 404,
       });
     }
