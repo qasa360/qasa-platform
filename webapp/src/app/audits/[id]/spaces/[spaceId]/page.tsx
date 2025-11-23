@@ -77,7 +77,7 @@ export default function SpaceElementsPage() {
       elements.map((el) => ({
         id: el.id,
         name: el.name,
-        elementTypeId: el.elementType.elementTypeId,
+        elementTypeId: el.elementType.id,
       }))
     );
   }, [data?.items, elements, spaceId]);
@@ -192,79 +192,81 @@ export default function SpaceElementsPage() {
             </AlertDescription>
           </Alert>
         ) : (
-        <div className="space-y-3">
-          {sortedElements.map((elementProgress) => {
-            const element = elements.find((el) => el.id === elementProgress.elementId);
-            const isComplete = elementProgress.completionRate === 100;
-            const hasUnanswered = elementProgress.nextUnansweredQuestionId !== null;
+          <div className="space-y-3">
+            {sortedElements.map((elementProgress) => {
+              const element = elements.find(
+                (el) => el.id === elementProgress.elementId
+              );
+              const isComplete = elementProgress.completionRate === 100;
+              const hasUnanswered =
+                elementProgress.nextUnansweredQuestionId !== null;
 
-            return (
-              <Card
-                key={elementProgress.elementId}
-                className={cn(
-                  'cursor-pointer transition-all hover:border-primary/50 hover:shadow-md',
-                  hasUnanswered && 'border-primary/30 bg-primary/5'
-                )}
-                onClick={() => {
-                  router.push(
-                    `/audits/${auditId}/spaces/${spaceId}/elements/${elementProgress.elementId}`
-                  );
-                }}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <Package className="h-5 w-5 text-primary" />
-                        {elementProgress.elementName}
-                      </CardTitle>
-                      {element && (
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {element.elementType.name}
-                        </p>
-                      )}
+              return (
+                <Card
+                  key={elementProgress.elementId}
+                  className={cn(
+                    'cursor-pointer transition-all hover:border-primary/50 hover:shadow-md',
+                    hasUnanswered && 'border-primary/30 bg-primary/5'
+                  )}
+                  onClick={() => {
+                    router.push(
+                      `/audits/${auditId}/spaces/${spaceId}/elements/${elementProgress.elementId}`
+                    );
+                  }}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Package className="h-5 w-5 text-primary" />
+                          {elementProgress.elementName}
+                        </CardTitle>
+                        {element && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {element.elementType.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {isComplete ? (
+                          <Badge variant="success" className="text-xs">
+                            Completo
+                          </Badge>
+                        ) : hasUnanswered ? (
+                          <Badge variant="default" className="text-xs">
+                            Pendiente
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            Sin preguntas
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      {isComplete ? (
-                        <Badge variant="success" className="text-xs">
-                          Completo
-                        </Badge>
-                      ) : hasUnanswered ? (
-                        <Badge variant="default" className="text-xs">
-                          Pendiente
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          Sin preguntas
-                        </Badge>
-                      )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {elementProgress.answeredQuestions} de{' '}
+                          {elementProgress.totalQuestions} preguntas
+                        </span>
+                        <span className="font-medium">
+                          {Math.round(elementProgress.completionRate)}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={elementProgress.completionRate}
+                        className="h-2"
+                      />
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {elementProgress.answeredQuestions} de{' '}
-                        {elementProgress.totalQuestions} preguntas
-                      </span>
-                      <span className="font-medium">
-                        {Math.round(elementProgress.completionRate)}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={elementProgress.completionRate}
-                      className="h-2"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
   );
 }
-
