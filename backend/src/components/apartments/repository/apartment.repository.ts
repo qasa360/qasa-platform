@@ -118,4 +118,51 @@ export class ApartmentRepository implements IApartmentRepository {
       ),
     });
   }
+
+  async getApartmentWithSpacesAndElements(apartmentId: number): Promise<{
+    id: number;
+    spaces: Array<{
+      id: number;
+      spaceTypeId: number;
+      elements: Array<{
+        id: number;
+        elementTypeId: number;
+      }>;
+    }>;
+  } | null> {
+    const result = await this.prisma.client.apartment.findUnique({
+      where: { id: apartmentId },
+      select: {
+        id: true,
+        spaces: {
+          select: {
+            id: true,
+            space_type_id: true,
+            elements: {
+              select: {
+                id: true,
+                element_type_id: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!result) {
+      return null;
+    }
+
+    return {
+      id: result.id,
+      spaces: result.spaces.map((space) => ({
+        id: space.id,
+        spaceTypeId: space.space_type_id,
+        elements: space.elements.map((element) => ({
+          id: element.id,
+          elementTypeId: element.element_type_id,
+        })),
+      })),
+    };
+  }
 }

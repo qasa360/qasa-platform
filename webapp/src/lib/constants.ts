@@ -28,6 +28,7 @@ export const QUERY_KEYS = {
   INCIDENTS: 'incidents',
   FLOORS: 'floors',
   INVENTORY: 'inventory',
+  APARTMENTS: 'apartments',
 } as const;
 
 /**

@@ -91,7 +91,12 @@ const sendErrorResponse = (res: Response, err: any | IAppError): void => {
   res.status(err.httpCode || constants.HTTP_STATUS_INTERNAL_SERVER_ERROR);
 
   if (implementsIAppError(err)) {
-    res.json(err.toJson());
+    const errorJson = err.toJson();
+    // Include auditId for AuditAlreadyInProgressError to allow frontend redirection
+    if (err.name === "AuditAlreadyInProgressError" && (err as any).auditId) {
+      (errorJson as any).auditId = (err as any).auditId;
+    }
+    res.json(errorJson);
     return;
   }
 

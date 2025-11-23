@@ -12,4 +12,5 @@ export const LIBS_TYPES = {
 export const INFRASTRUCTURE_TYPES = {
   IPgClient: Symbol.for("IPgClient"),
   IPrismaCustomClient: Symbol.for("IPrismaCustomClient"),
+  ICloudflareR2Client: Symbol.for("ICloudflareR2Client"),
 } as const;

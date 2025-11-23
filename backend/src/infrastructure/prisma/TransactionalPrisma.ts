@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { PrismaCustomClient } from "./PrismaCustomClient";
+import type { IPrismaCustomClient } from "./IPrismaCustomClient";
 
 export function Transactional(
   _target: any,
@@ -9,8 +9,12 @@ export function Transactional(
   const original = descriptor.value;
 
   descriptor.value = async function (...args: any[]) {
-    const prisma: PrismaCustomClient = (this as any).prismaCustomClient;
-    if (!prisma) throw new Error("@Transactional: prismaService not found");
+    const prisma: IPrismaCustomClient = (this as any).prismaCustomClient;
+    if (!prisma) {
+      throw new Error(
+        "@Transactional: prismaCustomClient not found. Ensure the service has a public 'prismaCustomClient' property of type IPrismaCustomClient."
+      );
+    }
 
     return await prisma.executeInTransaction({
       callback: async () => await original.apply(this, args),
