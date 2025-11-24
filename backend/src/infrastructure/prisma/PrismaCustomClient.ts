@@ -52,12 +52,12 @@ export class PrismaCustomClient implements IPrismaCustomClient {
     let txId: string | null = null;
 
     try {
-      const result = await this.#prisma.$transaction(async (tx: PrismaClient) =>
-        PrismaTransactionContext.runWithTransaction(tx, async () => {
+      const result = await this.#prisma.$transaction(async (tx) => {
+        return PrismaTransactionContext.runWithTransaction(tx, async () => {
           txId = PrismaTransactionContext.getCurrentTransactionId();
           return callback();
-        })
-      );
+        });
+      });
 
       this.#metrics.increment("db_transaction_commit");
       return result;

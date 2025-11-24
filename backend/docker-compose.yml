@@ -26,6 +26,7 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    profiles: ["dev", "prod"] # disponible en ambos entornos
 
   qasa-backend:
     build:
@@ -34,26 +35,23 @@ services:
     container_name: qasa-backend
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
-      - "${DEBUG_PORT:-9229}:9229" # Debug port
+      - "${DEBUG_PORT:-9229}:9229"
     volumes:
-      # Mount source code for hot reload
       - ./src:/app/src
       - ./prisma:/app/prisma
-      # Exclude node_modules to avoid conflicts
       - /app/node_modules
     environment:
-      - NODE_ENV=development
-      - APP_ENV=development
-      - HOST=0.0.0.0
-      - PORT=${PORT:-3000}
-      - LOG_LEVEL=debug
-      - CORS_ALLOWED_ORIGINS=*
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=${DATABASE_PORT:-5432}
-      - DATABASE_NAME=${POSTGRES_DB:-qasa_db}
-      - DATABASE_USER=${POSTGRES_USER:-qasa_user}
-      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:-qasa_password}
-      - DEBUG_EXPOSE=${DEBUG_PORT:-9229}
+      NODE_ENV: development
+      APP_ENV: development
+      HOST: 0.0.0.0
+      PORT: ${PORT:-3000}
+      LOG_LEVEL: debug
+      CORS_ALLOWED_ORIGINS: "*"
+
+      # Prisma necesita esto sí o sí
+      DATABASE_URL: postgresql://${POSTGRES_USER:-qasa_user}:${POSTGRES_PASSWORD:-qasa_password}@postgres:5432/${POSTGRES_DB:-qasa_db}?schema=public
+
+      DEBUG_EXPOSE: ${DEBUG_PORT:-9229}
     env_file:
       - .env
     depends_on:
@@ -70,7 +68,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://0.0.0.0:8010/health",
+          "http://0.0.0.0:${PORT:-3000}/health",
           "||",
           "exit",
           "1",
@@ -79,8 +77,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    profiles:
+      - dev
 
-  # Production service (optional, for testing production builds)
   qasa-backend-prod:
     build:
       context: .
@@ -90,19 +89,22 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - NODE_ENV=production
-      - APP_ENV=production
-      - HOST=0.0.0.0
-      - PORT=3000
-      - LOG_LEVEL=info
-      - CORS_ALLOWED_ORIGINS=*
+      NODE_ENV: production
+      APP_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      LOG_LEVEL: info
+      CORS_ALLOWED_ORIGINS: "*"
+
+      # Prisma in prod (local emulation)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-qasa_user}:${POSTGRES_PASSWORD:-qasa_password}@postgres:5432/${POSTGRES_DB:-qasa_db}?schema=public
     env_file:
       - .env
     restart: unless-stopped
     networks:
       - qasa-network
     profiles:
-      - production
+      - prod
     healthcheck:
       test:
         [
@@ -111,7 +113,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://0.0.0.0:8010/health",
+          "http://0.0.0.0:3000/health",
           "||",
           "exit",
           "1",

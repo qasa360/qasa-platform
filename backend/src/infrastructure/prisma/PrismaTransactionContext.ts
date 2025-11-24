@@ -3,8 +3,13 @@ import { AsyncLocalStorage } from "async_hooks";
 import type { PrismaClient } from "@prisma/client";
 import type { IDbLogger } from "../../lib/logger/dbLogger.interface";
 
+type PrismaTransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+>;
+
 interface TransactionState {
-  client: PrismaClient;
+  client: PrismaTransactionClient | PrismaClient;
   isActive: boolean;
   startTime: number;
   id: string;
@@ -30,11 +35,11 @@ export class PrismaTransactionContext {
       return null;
     }
 
-    return state.client;
+    return state.client as PrismaClient;
   }
 
   static async runWithTransaction<T>(
-    client: PrismaClient,
+    client: PrismaTransactionClient | PrismaClient,
     fn: () => Promise<T>
   ): Promise<T> {
     const state: TransactionState = {
@@ -59,7 +64,10 @@ export class PrismaTransactionContext {
     state.isActive = false;
 
     try {
-      await state.client.$disconnect();
+      // Transaction clients don't have $disconnect, only regular clients do
+      if ("$disconnect" in state.client) {
+        await state.client.$disconnect();
+      }
     } catch (err) {
       this.dbLogger?.error({
         message: "Failed to cleanup expired Prisma transaction",

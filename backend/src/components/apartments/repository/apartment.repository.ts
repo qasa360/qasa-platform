@@ -81,7 +81,11 @@ export class ApartmentRepository implements IApartmentRepository {
         agent,
       },
       include: {
-        spaces: true,
+        spaces: {
+          include: {
+            space_type: true,
+          },
+        },
       },
     });
 
@@ -108,7 +112,7 @@ export class ApartmentRepository implements IApartmentRepository {
             uuid: space.uuid,
             apartmentId: space.apartment_id,
             name: space.name,
-            spaceType: space.space_type as SpaceType,
+            spaceType: space.space_type.code as SpaceType,
             m2: space.m2 || undefined,
             order: space.order || undefined,
             notes: space.notes || undefined,

@@ -12,26 +12,26 @@ help: ## Show this help message
 # Main command
 build-stack: ## Build and start the development stack
 	@echo "🧹 Cleaning up existing containers..."
-	@docker-compose down --remove-orphans 2>/dev/null || true
+	@docker-compose --profile dev down --remove-orphans 2>/dev/null || true
 	@echo "🚀 Building and starting QASA Backend..."
-	@docker-compose up --build
+	@docker-compose --profile dev up --build
 
 # Essential commands
 up: ## Start the development environment
 	@echo "🚀 Starting QASA Backend..."
-	@docker-compose up
+	@docker-compose --profile dev up
 
 down: ## Stop and remove all containers
 	@echo "🛑 Stopping all containers..."
-	@docker-compose down
+	@docker-compose --profile dev down
 
 logs: ## Show logs from backend
 	@echo "📋 Showing backend logs..."
-	@docker-compose logs -f qasa-backend
+	@docker-compose --profile dev logs -f qasa-backend
 
 clean: ## Clean up containers, images, and volumes
 	@echo "🧹 Cleaning up Docker resources..."
-	@docker-compose down --volumes --remove-orphans
+	@docker-compose --profile dev down --volumes --remove-orphans
 	@docker system prune -f
 	@echo "✅ Cleanup completed"
 
@@ -39,23 +39,22 @@ migrate: ## Run Prisma migrations inside the backend container
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
-		docker compose up -d qasa-backend; \
+		docker compose --profile dev up -d qasa-backend; \
 		sleep 5; \
 	fi
 	@echo "🏗️  Running Prisma migrations..."
-	@docker compose exec qasa-backend npx prisma migrate dev --name "auto_migration"
+	@docker compose --profile dev exec qasa-backend npx prisma migrate dev --name "auto_migration"
 	@echo "🔧 Fixing migrations permissions..."
 	@sudo chown -R $$(id -u):$$(id -g) prisma/migrations 2>/dev/null || true
 	@echo "✅ Migration completed successfully!"
 
-db-seed: ## Run Prisma migrations inside the backend container
-	@echo "✅ Migration completed successfully!"
+db-seed: ## Run Prisma seed inside the backend container
 	@echo "🏗️  Running Prisma seed..."
-	@docker compose exec qasa-backend npm run prisma:seed
+	@docker compose --profile dev exec qasa-backend npm run prisma:seed
 
 debug: ## Start backend in debug mode (port 9229 exposed for remote debugging)
 	@echo "🐛 Starting backend in debug mode..."
-	@docker-compose -f docker-compose.yml -f docker-compose.debug.yml up --build qasa-backend
+	@docker-compose --profile dev -f docker-compose.yml -f docker-compose.debug.yml up --build qasa-backend
 	@echo "✅ Debug mode active on port 9229. Attach your IDE debugger."
 
 clean-migrations: ## Remove all Prisma migrations and fix permissions
@@ -75,11 +74,11 @@ migrate-reset: ## Reset database and all migrations (WARNING: deletes all data)
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
-		docker compose up -d qasa-backend; \
+		docker compose --profile dev up -d qasa-backend; \
 		sleep 5; \
 	fi
 	@echo "🔄 Resetting database and migrations..."
-	@docker compose exec -T qasa-backend npx prisma migrate reset --force --skip-seed
+	@docker compose --profile dev exec -T qasa-backend npx prisma migrate reset --force --skip-seed
 	@echo "🔧 Fixing migrations permissions..."
 	@sudo chown -R $$(id -u):$$(id -g) prisma/migrations 2>/dev/null || true
 	@echo "✅ Database reset completed!"
@@ -88,11 +87,11 @@ migrate-init: clean-migrations migrate-reset ## Clean migrations, reset DB, and 
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
-		docker compose up -d qasa-backend; \
+		docker compose --profile dev up -d qasa-backend; \
 		sleep 5; \
 	fi
 	@echo "🏗️  Creating initial migration..."
-	@docker compose exec -T qasa-backend npx prisma migrate dev --name init
+	@docker compose --profile dev exec -T qasa-backend npx prisma migrate dev --name init
 	@echo "🔧 Fixing migrations permissions..."
 	@sudo chown -R $$(id -u):$$(id -g) prisma/migrations 2>/dev/null || true
 	@echo "✅ Initial migration created successfully!"
@@ -101,21 +100,21 @@ migrate-status: ## Check migration status without applying changes
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
-		docker compose up -d qasa-backend; \
+		docker compose --profile dev up -d qasa-backend; \
 		sleep 5; \
 	fi
 	@echo "📊 Checking migration status..."
-	@docker compose exec -T qasa-backend npx prisma migrate status
+	@docker compose --profile dev exec -T qasa-backend npx prisma migrate status
 
 create-default-template: ## Create default audit template
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
-		docker compose up -d qasa-backend; \
+		docker compose --profile dev up -d qasa-backend; \
 		sleep 5; \
 	fi
 	@echo "📝 Creating default audit template..."
-	@docker compose exec qasa-backend npx ts-node scripts/create-default-template.ts
+	@docker compose --profile dev exec qasa-backend npx ts-node scripts/create-default-template.ts
 	@echo "✅ Default template created"
 
 migrate-sync: ## Sync migrations when DB and local files are out of sync (PRODUCTION-SAFE)
@@ -123,17 +122,17 @@ migrate-sync: ## Sync migrations when DB and local files are out of sync (PRODUC
 	@echo "📦 Checking if backend container is running..."
 	@if [ "$$(docker ps -q -f name=qasa-backend)" = "" ]; then \
 		echo "⚠️  Backend container not running. Starting it first..."; \
-		docker compose up -d qasa-backend; \
+		docker compose --profile dev up -d qasa-backend; \
 		sleep 5; \
 	fi
 	@echo "🔍 Checking what differences exist..."
-	@docker compose exec -T qasa-backend npx prisma migrate diff \
+	@docker compose --profile dev exec -T qasa-backend npx prisma migrate diff \
 		--from-schema-datasource prisma/schema.prisma \
 		--to-schema-datamodel prisma/schema.prisma \
 		--script > /tmp/migration_diff.sql || true
 	@if [ -s /tmp/migration_diff.sql ]; then \
 		echo "📝 Differences found. Creating sync migration..."; \
-		docker compose exec -T qasa-backend npx prisma migrate dev --name sync_missing_changes; \
+		docker compose --profile dev exec -T qasa-backend npx prisma migrate dev --name sync_missing_changes; \
 	else \
 		echo "✅ No differences found. Database is in sync."; \
 	fi
